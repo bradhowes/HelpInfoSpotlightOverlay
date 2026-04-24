@@ -638,7 +638,7 @@ struct SheetSpotlightDemo: View {
       .navigationBarTitleDisplayMode(.inline)
     }
     .presentationDetents([.medium, .large])
-    .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: Step.allCases, overlay: helpInfoOverlay)
+    .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: [Step.title, .action], overlay: helpInfoOverlay)
   }
 
   private func summaryRow(title: String, value: String) -> some View {

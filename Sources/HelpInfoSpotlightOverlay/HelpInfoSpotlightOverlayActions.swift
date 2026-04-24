@@ -11,4 +11,3 @@ public struct HelpInfoSpotlightOverlayActions {
   /// Move to the next item in `orderedIDs`. Skips over items that are not found in the collection of registered views.
   public let next: () -> Void
 }
-

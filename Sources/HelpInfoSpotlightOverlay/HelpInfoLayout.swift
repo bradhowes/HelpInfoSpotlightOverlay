@@ -44,6 +44,7 @@ public struct HelpInfoLayout: Layout {
 
 #Preview {
   VStack(spacing: 8) {
+    Button("Login") {}
     VStack {
       HelpInfoLayout {
         Text("Another Title")

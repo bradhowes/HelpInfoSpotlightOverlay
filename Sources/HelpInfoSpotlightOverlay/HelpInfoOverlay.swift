@@ -49,3 +49,64 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
   .shadow(color: (colorScheme == .dark ? Color.white : .black).opacity(0.20), radius: 24, y: 12)
 }
 
+private enum HelpInfo {
+  case login
+  case addItem
+  case deleteItem
+  case changeName
+}
+
+extension View {
+  fileprivate func helpInfoViewTag(_ id: HelpInfo) -> some View { helpInfoViewTag(id: id) }
+}
+
+struct DemoAppView: View {
+  @State private var selectedHelpInfoItem: HelpInfo?
+  var body: some View {
+    NavigationStack {
+      VStack {
+        Button("Login") {}
+          .helpInfoViewTag(.login)
+        Button("Add Item") {}
+          .helpInfoViewTag(.addItem)
+        Button("Delete Item") {}
+          .helpInfoViewTag(.deleteItem)
+        Button("Rename") {}
+          .helpInfoViewTag(.changeName)
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("?") { selectedHelpInfoItem = .login }
+        }
+      }
+    }
+    .helpInfoSpotlightOverlay(
+      selection: $selectedHelpInfoItem,
+      orderedIDs: [HelpInfo.login, .addItem, .deleteItem, .changeName],
+      overlay: helpInfoOverlay
+    )
+  }
+}
+
+extension HelpInfo: CaseIterable, HelpInfoProvider {
+  var title: LocalizedStringKey {
+    switch self {
+    case .login: return "Login"
+    case .addItem: return "Add"
+    case .deleteItem: return "Delete"
+    case .changeName: return "Rename"
+    }
+  }
+  var text: LocalizedStringKey {
+    switch self {
+    case .login: return "Touch to log in to the system."
+    case .addItem: return "Adds a new item to the collection."
+    case .deleteItem: return "Delete the current item from the collection."
+    case .changeName: return "Change the name of the current item."
+    }
+  }
+}
+
+#Preview {
+  DemoAppView()
+}
