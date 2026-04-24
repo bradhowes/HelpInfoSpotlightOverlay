@@ -33,9 +33,9 @@ extension View {
     orderedIDs: [ID],
     spotlightPadding: CGFloat = 8,
     cornerRadius: CGFloat = 28,
-    animationDuration: TimeInterval = 0.4,
+    animationDuration: TimeInterval = 0.8,
     blurRadius: CGFloat = 6.0,
-    dimmingOpacity: CGFloat = 0.7,
+    dimmingOpacity: CGFloat = 0.8,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
     modifier(
@@ -96,7 +96,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
 
   func body(content: Content) -> some View {
     content
-      .coordinateSpace(name: HelpInfoSpotlightCoordinateSpace.name)
+      .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
       .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
       .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
         GeometryReader { proxy in
@@ -135,15 +135,14 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
       ZStack(alignment: .topLeading) {
         spotlightMask(for: spotlightFrame)
         helpInfoGenerator(selected, actions)
-          .preferredColorScheme(colorScheme)
-          .frame(maxWidth: containerBounds.width - horizontalPadding * 2)
           .onGeometryChange(for: CGSize.self) {
             $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
           } action: { panelSize in
             self.position = helpInfoPosition(for: spotlightFrame, panelSize: panelSize, in: containerBounds)
           }
-          .clipped()
+          .frame(maxWidth: containerBounds.width - horizontalPadding * 2)
           .position(self.position)
+          .clipped()
       }
       .frame(width: containerBounds.width, height: containerBounds.height)
       .offset(x: -proxy.safeAreaInsets.leading, y: -proxy.safeAreaInsets.top)
@@ -208,6 +207,7 @@ extension HelpInfoSpotlightOverlayModifier {
   private func spotlightMask(for focusArea: CGRect) -> some View {
     ZStack {
       spotlightBackingColor
+        .opacity(dimmingOpacity)
       RoundedRectangle(cornerRadius: cornerRadius)
         .frame(width: focusArea.width, height: focusArea.height)
         .position(x: focusArea.midX, y: focusArea.midY)
@@ -216,7 +216,6 @@ extension HelpInfoSpotlightOverlayModifier {
         .blendMode(.destinationOut)
     }
     .compositingGroup()
-    .opacity(dimmingOpacity)
     .contentShape(.rect)
     .onTapGesture {
       dismissAction()
@@ -376,11 +375,10 @@ struct TutorialSpotlightDemo: View {
       switch self {
       case .profile:
 """
-Here the user quickly gets to their \(Image(systemName: "checkmark")) profile and account settings.
+Here the user quickly gets to their profile and account settings.
 """
       case .travelPlanner:
 """
-This is a test. \
 This is a test. \
 This is a test. \
 This is a test.
@@ -467,9 +465,12 @@ The button completes the scenario. The final step may lead to payment or confirm
           .padding()
       }
     }
-    .sheet(isPresented: $showSheet) {
+    .sheet(isPresented: $showSheet, onDismiss: {
+      self.selection = nil
+    }, content: {
       SheetSpotlightDemo()
-    }
+    })
+    .preferredColorScheme(colorScheme)
     .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: Step.allCases, overlay: helpInfoOverlay)
   }
 
@@ -570,6 +571,7 @@ The button completes the scenario. The final step may lead to payment or confirm
 }
 
 struct SheetSpotlightDemo: View {
+  @Environment(\.colorScheme) var colorScheme
 
   enum Step: CaseIterable, HelpInfoProvider {
     case title
@@ -594,7 +596,7 @@ struct SheetSpotlightDemo: View {
   @State private var selection: Step?
 
   var body: some View {
-    NavigationStack {
+    Form {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 12) {
           Text("Plan Summary")
@@ -615,10 +617,6 @@ struct SheetSpotlightDemo: View {
           summaryRow(title: "Guests", value: "2 adults")
         }
         .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.thinMaterial, in: .rect(cornerRadius: 24))
-
-        Spacer()
 
         Button {
           dismiss()
@@ -630,15 +628,13 @@ struct SheetSpotlightDemo: View {
             .padding(.vertical, 18)
             .background(.blue.gradient, in: .rect(cornerRadius: 18))
         }
-        .buttonStyle(.plain)
         .helpInfoViewTag(.action)
       }
-      .padding(24)
-      .navigationTitle("Booking")
-      .navigationBarTitleDisplayMode(.inline)
+      .buttonStyle(.plain)
     }
-    .presentationDetents([.medium, .large])
+    .background(.background)
     .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: [Step.title, .action], overlay: helpInfoOverlay)
+    .presentationDetents([.medium, .large])
   }
 
   private func summaryRow(title: String, value: String) -> some View {

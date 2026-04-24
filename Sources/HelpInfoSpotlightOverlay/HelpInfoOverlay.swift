@@ -11,9 +11,11 @@ import SwiftUI
  - returns: overlay view
  */
 @MainActor
+@ViewBuilder
 public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
   @Environment(\.colorScheme) var colorScheme
-  return VStack(spacing: 16) {
+
+  VStack(spacing: 16) {
     HelpInfoLayout {
       Text(item.title)
         .font(.title3.weight(.bold))
@@ -44,7 +46,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
   .padding(20)
   .background {
     RoundedRectangle(cornerRadius: 28)
-      .fill(.background)
+      .fill(colorScheme == .light ? .white : .black)
   }
   .shadow(color: (colorScheme == .dark ? Color.white : .black).opacity(0.20), radius: 24, y: 12)
 }
