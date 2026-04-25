@@ -95,15 +95,17 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   @State private var position: CGPoint = .zero
 
   func body(content: Content) -> some View {
-    content
-      .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
-      .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
-      .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
-        GeometryReader { proxy in
-          spotlightOverlayContent(preferences: preferences, proxy: proxy)
+    ScrollViewReader { reader in
+      content
+        .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
+        .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
+        .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
+          GeometryReader { proxy in
+            spotlightOverlayContent(preferences: preferences, proxy: proxy, reader: reader)
+          }
+          .animation(.smooth(duration: animationDuration), value: selection)
         }
-        .animation(.smooth(duration: animationDuration), value: selection)
-      }
+    }
   }
 
   /**
@@ -121,15 +123,15 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
-  private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy) -> some View {
+  private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy) -> some View {
     if let selected = selection, let anchor = preferences[selected] {
       let containerBounds = proxy.containerBounds
       let anchorFrame = proxy[anchor].insetBy(dx: -spotlightPadding, dy: -spotlightPadding)
       let spotlightFrame = anchorFrame.offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
       let actions = HelpInfoSpotlightOverlayActions(
         dismiss: { self.dismissAction() },
-        previous: { self.previousAction(selected: selected, preferences: preferences) },
-        next: { self.nextAction(selected: selected, preferences: preferences) }
+        previous: { self.previousAction(selected: selected, preferences: preferences, reader: reader) },
+        next: { self.nextAction(selected: selected, preferences: preferences, reader: reader) }
       )
 
       ZStack(alignment: .topLeading) {
@@ -163,7 +165,7 @@ extension HelpInfoSpotlightOverlayModifier {
     selection = nil
   }
 
-  private func previousAction(selected: ID, preferences: Value) {
+  private func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy) {
     if var index = orderedIDs.firstIndex(of: selected) {
       for _ in 0..<orderedIDs.count {
         index = index == orderedIDs.startIndex ? orderedIDs.endIndex - 1 : orderedIDs.index(before: index)
@@ -171,6 +173,7 @@ extension HelpInfoSpotlightOverlayModifier {
         // Only use an ID if there is an anchor for it.
         if preferences[previous] != nil {
           selection = previous
+          reader.scrollTo(previous)
           return
         }
       }
@@ -178,7 +181,7 @@ extension HelpInfoSpotlightOverlayModifier {
     selection = nil
   }
 
-  private func nextAction(selected: ID, preferences: Value) {
+  private func nextAction(selected: ID, preferences: Value, reader: ScrollViewProxy) {
     if var index = orderedIDs.firstIndex(of: selected) {
       for _ in 0..<orderedIDs.count {
         index = index == orderedIDs.endIndex - 1 ? orderedIDs.startIndex : orderedIDs.index(after: index)
@@ -186,6 +189,7 @@ extension HelpInfoSpotlightOverlayModifier {
         // Only use an ID if there is an anchor for it.
         if preferences[next] != nil {
           selection = next
+          reader.scrollTo(next)
           return
         }
       }
@@ -298,11 +302,13 @@ private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
+        .id(id)
     } else {
       content
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
+        .id(id)
     }
   }
 }
@@ -450,13 +456,13 @@ The button completes the scenario. The final step may lead to payment or confirm
         .padding(24)
       }
       .navigationTitle("Discover")
-      .navigationBarTitleDisplayMode(.inline)
+      // .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
+        ToolbarItem(placement: .automatic) {
           profileButton
             .helpInfoViewTag(.profile)
         }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .automatic) {
           Button {
             selection = .profile
           } label: {

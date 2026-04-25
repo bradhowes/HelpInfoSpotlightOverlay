@@ -93,7 +93,7 @@ struct DemoAppView: View {
         }
       }
       .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .automatic) {
           Button("?") { selectedHelpInfoItem = .login }
         }
       }
