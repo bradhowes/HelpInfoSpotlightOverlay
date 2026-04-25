@@ -747,7 +747,6 @@ extension View {
   fileprivate func helpInfoViewTag(_ id: SheetSpotlightDemo.Step) -> some View { helpInfoViewTag(id: id) }
 }
 
-@available(iOS 16.0)
 #Preview {
   TutorialSpotlightDemo()
 }
