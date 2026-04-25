@@ -102,6 +102,8 @@ extension HelpInfo: CaseIterable, HelpInfoProvider {
 }
 ```
 
+This is only necessary when using the built-in `helpInfoOverlay`.
+
 ## Origins
 
 The code in this package derived from that of Artem Mirzabekian and his 
