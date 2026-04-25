@@ -122,7 +122,7 @@ behavior and appearance of the spotlite (defaults given in parentheses):
 
 The `scrollToItem` is done by wrapping the main view in a `ScrollViewReader` and then calling `scrollTo` with the ID of the 
 view to highlight. This seems to work OK, but it can be disabled if the use of the `ScrollViewReader` is causing issues with 
-in view code.
+your SwiftUI code.
 
 ## Origins
 
