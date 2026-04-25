@@ -110,8 +110,8 @@ This is only necessary when using the built-in `helpInfoOverlay`.
 
 ## Origins
 
-The code in this package derived from that of Artem Mirzabekian and his 
-[TutorialSpotlight](https://github.com/Livsy90/TutorialSpotlight) package. However, there were sufficient changes that I created my
+The code in this package derived from code in the [TutorialSpotlight](https://github.com/Livsy90/TutorialSpotlight) 
+package by Artem Mirzabekian. However, there were sufficient changes that I created my
 own. (the demo page shown above is largely from his source with some adjustments to handle "dark" mode.)
 
 
