@@ -118,9 +118,11 @@ behavior and appearance of the spotlite (defaults given in parentheses):
 * `animationDuration` -- the duration of the animations used by the views. (0.3)
 * `blurRadius` -- the amount of blurring to apply to the edge of the spotlight. (6)
 * `dimmingOpacity` -- how opaque the overlay is that covers the root view, minus the spotlight region. (0.8)
-* `scrollToItem` -- when `true`, attempts to make visible the view to spotlight. This is done by wrapping the main view
-in a `ScrollViewReader` and then calling `scrollTo` with the ID of the view to highlight. This seems to work OK, but it can be
-disabled if the wrapping `ScrollViewReader` is causing issues with your view code.
+* `scrollToItem` -- when `true`, attempts to make visible the view to spotlight. (true)
+
+The `scrollToItem` is done by wrapping the main view in a `ScrollViewReader` and then calling `scrollTo` with the ID of the 
+view to highlight. This seems to work OK, but it can be disabled if the use of the `ScrollViewReader` is causing issues with 
+in view code.
 
 ## Origins
 
