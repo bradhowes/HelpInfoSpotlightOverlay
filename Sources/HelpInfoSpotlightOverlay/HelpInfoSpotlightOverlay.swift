@@ -33,7 +33,7 @@ extension View {
     orderedIDs: [ID],
     spotlightPadding: CGFloat = 8,
     cornerRadius: CGFloat = 28,
-    animationDuration: TimeInterval = 0.8,
+    animationDuration: TimeInterval = 0.3,
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.8,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
@@ -71,6 +71,14 @@ extension View {
 private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
+  /// The position of the view displaying the help text. This is dynamically calculated based on the location of the item being
+  /// spotlit, and the size of the help text view.
+  @State private var position: CGPoint = .zero
+  /// When moving to the previous or next anchor, we first scroll to it and set `pending` in order to delay calulation of
+  /// the info view position until the anchor is in the new location. An `onChange` modifier in the view from
+  /// `spotlightOverlayContent` will set `selection` with `pending`.
+  @State private var pending: ID?
+
   @Namespace private var spotlightAnimation
   @Environment(\.colorScheme) private var colorScheme
 
@@ -89,10 +97,6 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   let horizontalPadding: CGFloat = 16
   let verticalSeparation: CGFloat = 24
   let verticalPadding: CGFloat = 24
-
-  /// The position of the view displaying the help text. This is dynamically calculated based on the location of the item being
-  /// spotlit, and the size of the help text view.
-  @State private var position: CGPoint = .zero
 
   func body(content: Content) -> some View {
     ScrollViewReader { reader in
@@ -126,8 +130,9 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy) -> some View {
     if let selected = selection, let anchor = preferences[selected] {
       let containerBounds = proxy.containerBounds
-      let anchorFrame = proxy[anchor].insetBy(dx: -spotlightPadding, dy: -spotlightPadding)
-      let spotlightFrame = anchorFrame.offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
+      let spotlightFrame = proxy[anchor]
+        .insetBy(dx: -spotlightPadding, dy: -spotlightPadding)
+        .offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
       let actions = HelpInfoSpotlightOverlayActions(
         dismiss: { self.dismissAction() },
         previous: { self.previousAction(selected: selected, preferences: preferences, reader: reader) },
@@ -152,8 +157,13 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
       }
       .frame(width: containerBounds.width, height: containerBounds.height)
       .offset(x: -proxy.safeAreaInsets.leading, y: -proxy.safeAreaInsets.top)
-      .animation(.smooth(duration: animationDuration), value: selection)
       .animation(.smooth(duration: animationDuration), value: position)
+      .onChange(of: pending) {
+        // Hack: postpone the update just a tad so that the anchor location will be valid after scrolling. What is a better way?
+        Task {
+          self.selection = pending
+        }
+      }
     } else {
       EmptyView()
     }
@@ -173,10 +183,8 @@ extension HelpInfoSpotlightOverlayModifier {
         let previous = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[previous] != nil {
-          withAnimation(.smooth(duration: animationDuration)) {
-            reader.scrollTo(previous, anchor: .center)
-          }
-          selection = previous
+          reader.scrollTo(previous)
+          self.pending = previous
           return
         }
       }
@@ -191,10 +199,8 @@ extension HelpInfoSpotlightOverlayModifier {
         let next = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[next] != nil {
-          withAnimation(.smooth(duration: animationDuration)) {
-            reader.scrollTo(next, anchor: .center)
-          }
-          selection = next
+          reader.scrollTo(next)
+          self.pending = next
           return
         }
       }
