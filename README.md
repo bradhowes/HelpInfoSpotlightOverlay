@@ -108,6 +108,20 @@ extension HelpInfo: CaseIterable, HelpInfoProvider {
 
 This is only necessary when using the built-in `helpInfoOverlay`.
 
+## Configuration
+
+The `helpInfoSpotlightOverlay` view modifier requires three values, but it accepts addional, optional ones to customize the
+behavior and appearance of the spotlite:
+
+* `spotlightPadding` -- padding to the spotlight region to make it larger (positive) or smaller (negative). (8)
+* `cornerRadius` -- a corner radius to apply to the spotlight area rectangle. (28)
+* `animationDuration` -- the duration of the animations used by the views. (0.3)
+* `blurRadius` -- the amount of blurring to apply to the edge of the spotlight. (6)
+* `dimmingOpacity` -- how opaque the overlay is that covers the root view, minus the spotlight region. (0.8)
+* `scrollToItem` -- when `true`, attempts to make visible the view to spotlight. This is done by wrapping the main view
+in a `ScrollViewReader` and then calling `scrollTo` with the ID of the view to highlight. This seems to work OK, but it can be
+disabled if the wrapping `ScrollViewReader` is causing issues with your view code.
+
 ## Origins
 
 The code in this package derived from code in the [TutorialSpotlight](https://github.com/Livsy90/TutorialSpotlight) 
