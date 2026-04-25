@@ -51,7 +51,7 @@ Now, add a `@State` variable to track the active help info item, and a toolbar b
 things rolling. Add the `helpInfoSpotlightOverlay` modifier to the top-level view:
 
 ```swift
-struct AppView: View {
+struct DemoAppView: View {
   @State private var selectedHelpInfoItem: HelpInfo?
 
   var body: some View {
@@ -73,6 +73,9 @@ struct AppView: View {
 
 The collection `HelpInfo` enum cases could be simplified by extending `HelpInfo` with `CaseIterable` to make available 
 `HelpInfo.allCases`.
+
+See the [DemoAppView](Sources/HelpInfoSpotlightOverlay/HelpInfoOverlay.swift) definition for the finished example. You can
+also demo it in the Xcode preview.
 
 The last missing piece is to add to `HelpInfo` the `HelpInfoProvider` conformance so that the `helpInfoOverlay` function can 
 extract the help text required to show to the user:
