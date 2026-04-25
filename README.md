@@ -111,7 +111,7 @@ This is only necessary when using the built-in `helpInfoOverlay`.
 ## Configuration
 
 The `helpInfoSpotlightOverlay` view modifier requires three values, but it accepts addional, optional ones to customize the
-behavior and appearance of the spotlite:
+behavior and appearance of the spotlite (defaults given in parentheses):
 
 * `spotlightPadding` -- padding to the spotlight region to make it larger (positive) or smaller (negative). (8)
 * `cornerRadius` -- a corner radius to apply to the spotlight area rectangle. (28)
