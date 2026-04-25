@@ -74,8 +74,9 @@ struct DemoAppView: View {
 The collection `HelpInfo` enum cases could be simplified by extending `HelpInfo` with `CaseIterable` to make available 
 `HelpInfo.allCases`.
 
-See the [DemoAppView](Sources/HelpInfoSpotlightOverlay/HelpInfoOverlay.swift#74) definition for the finished example. You can
-also demo it in the Xcode preview.
+See the
+[DemoAppView](https://github.com/bradhowes/HelpInfoSpotlightOverlay/blob/c569fa3ec3e9f2ea6b4fc046d93128840114fb2e/Sources/HelpInfoSpotlightOverlay/HelpInfoOverlay.swift#L74)
+definition for the finished example. You can also demo it in the Xcode preview for the file.
 
 The last missing piece is to add to `HelpInfo` the `HelpInfoProvider` conformance so that the `helpInfoOverlay` function can 
 extract the help text required to show to the user:
