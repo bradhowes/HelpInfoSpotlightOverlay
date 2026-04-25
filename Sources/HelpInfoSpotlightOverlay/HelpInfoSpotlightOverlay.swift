@@ -172,8 +172,10 @@ extension HelpInfoSpotlightOverlayModifier {
         let previous = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[previous] != nil {
+          withAnimation(.smooth(duration: animationDuration)) {
+            reader.scrollTo(previous, anchor: .center)
+          }
           selection = previous
-          reader.scrollTo(previous)
           return
         }
       }
@@ -188,8 +190,10 @@ extension HelpInfoSpotlightOverlayModifier {
         let next = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[next] != nil {
+          withAnimation(.smooth(duration: animationDuration)) {
+            reader.scrollTo(next, anchor: .center)
+          }
           selection = next
-          reader.scrollTo(next)
           return
         }
       }
@@ -241,7 +245,6 @@ extension HelpInfoSpotlightOverlayModifier {
    - returns: the location to use for the panel
    */
   private func helpInfoPosition(for focusFrame: CGRect, panelSize: CGSize, in container: CGRect) -> CGPoint {
-    print("focusFrame:", focusFrame, "panelSize:", panelSize, "container:", container)
     let panelWidth2 = panelSize.width / 2
     let panelHeight2 = panelSize.height / 2
 
@@ -264,7 +267,6 @@ extension HelpInfoSpotlightOverlayModifier {
       position = .init(x: centeredX, y: clampedY)
     }
 
-    print(position)
     return position
   }
 }
@@ -367,6 +369,7 @@ struct TutorialSpotlightDemo: View {
     case familyFilter
     case foodFilter
     case showSheet
+    case pastTrips
     case checkout
 
     var title: LocalizedStringKey {
@@ -379,6 +382,7 @@ struct TutorialSpotlightDemo: View {
       case .foodFilter: "Food"
       case .showSheet: "Plan Summary"
       case .checkout: "Checkout"
+      case .pastTrips: "Past Trips"
       }
     }
 
@@ -420,12 +424,22 @@ Show the plan summary.
 """
 The button completes the scenario. The final step may lead to payment or confirmation.
 """
+      case .pastTrips:
+"""
+List of previous trips that have been taken.
+"""
       }
     }
   }
 
   @State private var selection: Step?
   @State private var showSheet: Bool = false
+
+  let columns = [
+    GridItem(alignment: .leading),
+    GridItem(alignment: .leading),
+    GridItem(.fixed(40), alignment: .leading),
+  ]
 
   var body: some View {
     NavigationStack {
@@ -454,8 +468,52 @@ The button completes the scenario. The final step may lead to payment or confirm
         }
         .helpInfoViewTag(.travelPlanner)
         .padding(24)
+
+        GroupBox("Past Trips") {
+          LazyVGrid(columns: columns) {
+            Section {
+              GridRow {
+                Text("Isle of Man")
+                Text("$123")
+                Text("1.3")
+              }
+              GridRow {
+                Text("Bermuda")
+                Text("$12,383")
+                Text("5.0")
+              }
+              GridRow {
+                Text("Saturn")
+                Text("$98,334,341")
+                Text("9.0")
+              }
+              GridRow {
+                Text("Fargo")
+                Text("$824")
+                Text("3.2")
+              }
+              GridRow {
+                Text("Mar-a-Lago")
+                Text("$33,234")
+                Text("0.0")
+              }
+            } header: {
+              LazyVGrid(columns: columns, spacing: 0) {
+                Text("Name")
+                Text("Price")
+                Text("Rating")
+              }
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+              .padding([.top, .bottom], 4)
+              .background(.background)
+            }
+          }
+          .padding([.leading, .trailing], 16.0)
+        }
+        .padding(24)
+        .helpInfoViewTag(.pastTrips)
       }
-      .navigationTitle("Discover")
       // .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .automatic) {
