@@ -145,7 +145,8 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
             self.position = helpInfoPosition(for: spotlightFrame, panelSize: panelSize, in: containerBounds)
           }
           .frame(maxWidth: containerBounds.width - horizontalPadding * 2)
-          .position(self.position)
+          .position(
+            self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
           .clipped()
           .zIndex(2)
       }
