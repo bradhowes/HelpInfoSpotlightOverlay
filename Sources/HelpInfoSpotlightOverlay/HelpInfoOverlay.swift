@@ -100,7 +100,7 @@ struct DemoAppView: View {
     }
     .helpInfoSpotlightOverlay(
       selection: $selectedHelpInfoItem,
-      orderedIDs: [HelpInfo.login, .addItem, .deleteItem, .changeName],
+      orderedIDs: HelpInfo.allCases,
       overlay: helpInfoOverlay
     )
   }
