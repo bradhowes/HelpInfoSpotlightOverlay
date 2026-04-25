@@ -132,7 +132,7 @@ own. (the demo page shown above is largely from his source with some adjustments
 
 
 [spi]: https://swiftpackageindex.com/bradhowes/HelpInfoSpotlightOverlay
-[spiv]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlayt%2Fbadge%3Ftype%3Dswift-versions
+[spiv]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlay%2Fbadge%3Ftype%3Dswift-versions
 [spip]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlay%2Fbadge%3Ftype%3Dplatforms
 [mit]: https://img.shields.io/badge/License-MIT-A31F34.svg
 [license]: https://opensource.org/licenses/MIT
