@@ -134,7 +134,9 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
 
       ZStack(alignment: .topLeading) {
         spotlightMask(for: spotlightFrame)
+          .zIndex(1)
         helpInfoGenerator(selected, actions)
+          .drawingGroup()
           .onGeometryChange(for: CGSize.self) {
             $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
           } action: { panelSize in
@@ -143,6 +145,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
           .frame(maxWidth: containerBounds.width - horizontalPadding * 2)
           .position(self.position)
           .clipped()
+          .zIndex(2)
       }
       .frame(width: containerBounds.width, height: containerBounds.height)
       .offset(x: -proxy.safeAreaInsets.leading, y: -proxy.safeAreaInsets.top)
@@ -208,12 +211,14 @@ extension HelpInfoSpotlightOverlayModifier {
     ZStack {
       spotlightBackingColor
         .opacity(dimmingOpacity)
+        .zIndex(3)
       RoundedRectangle(cornerRadius: cornerRadius)
         .frame(width: focusArea.width, height: focusArea.height)
         .position(x: focusArea.midX, y: focusArea.midY)
         .matchedGeometryEffect(id: selection, in: spotlightAnimation, properties: .frame, anchor: .center, isSource: false)
         .blur(radius: blurRadius)
         .blendMode(.destinationOut)
+        .zIndex(4)
     }
     .compositingGroup()
     .contentShape(.rect)

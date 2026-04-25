@@ -3,14 +3,13 @@
 import SwiftUI
 
 /**
- Protocol for entities that can provide help information for a view tagged by ``helpInfoViewTag``.
+ Protocol for a tag type that can provide help information for a view tagged with a tag type value.
  */
 public protocol HelpInfoProvider {
 
-  /// The content to use for the title `Text` view
+  /// The content to use for the title `Text` view.
   var title: LocalizedStringKey { get }
-  /// The generator to use for the content of the text `Text` view. This delays `String` interpolation to properly honor embedded
-  /// `Image(systemName:)` terms.
+  /// The content to use for the body `Text` view that provides details about the item.
   var text: LocalizedStringKey { get }
 }
 

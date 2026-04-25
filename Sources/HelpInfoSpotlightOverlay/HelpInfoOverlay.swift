@@ -3,24 +3,33 @@
 import SwiftUI
 
 /**
- Example definition of an overlay that presents the help information for a view tagged by ``helpInfoViewTag``. This can be used if
- the `ID` generic implements ``HelpInfoProvider``.
+ Example definition of an overlay that presents the help information for a view tagged by ``helpInfoViewTag``.
+
+ This can be used as-is if the `ID` generic implements ``HelpInfoProvider``. The overlay contains three buttons that correspond to
+ the actions found in  ``HelpInfoSpotlightOverlayActions``:
+
+ * `cancel` -- dismiss the spotlight overlay
+ * `previous` -- show the previous item in the collection of IDs
+ * `next` -- show the next item in the collection of IDs
+
+ The collection of IDs is not found here but is captured in the action closures that is handed to this function. There is no
+ business logic here, just presentation.
 
  - parameter item: the ID of the view being spotlit.
  - parameter actions: the collection of actions for buttons in the overlay view
  - returns: overlay view
  */
 @MainActor
-@ViewBuilder
 public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
   @Environment(\.colorScheme) var colorScheme
-
-  VStack(spacing: 16) {
+  return VStack(spacing: 16) {
     HelpInfoLayout {
       Text(item.title)
         .font(.title3.weight(.bold))
+        .contentTransition(.opacity)
       Text(item.text)
         .foregroundStyle(.secondary)
+        .contentTransition(.opacity)
     }
     .overlay(alignment: .topTrailing) {
       Button {
@@ -67,14 +76,21 @@ struct DemoAppView: View {
   var body: some View {
     NavigationStack {
       VStack {
-        Button("Login") {}
-          .helpInfoViewTag(.login)
-        Button("Add Item") {}
-          .helpInfoViewTag(.addItem)
-        Button("Delete Item") {}
-          .helpInfoViewTag(.deleteItem)
-        Button("Rename") {}
-          .helpInfoViewTag(.changeName)
+        Text("Tap the '?' to begin spotlighting.")
+        VStack(spacing: 24) {
+          Button("Login") {}
+            .helpInfoViewTag(.login)
+          Spacer()
+          HStack(spacing: 48) {
+            Button("Add Item") {}
+              .helpInfoViewTag(.addItem)
+            Button("Delete Item") {}
+              .helpInfoViewTag(.deleteItem)
+          }
+          Spacer()
+          Button("Rename") {}
+            .helpInfoViewTag(.changeName)
+        }
       }
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
