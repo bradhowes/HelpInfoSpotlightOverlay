@@ -26,6 +26,8 @@ extension View {
    - parameter animationDuration: the duration of animations involving the help item spotlight.
    - parameter blurRadius: the amount of blur applied to the spotlight region.
    - parameter dimmingOpacity: the amount of dimming applied to the whole app except the area being spotlit.
+   - parameter scrollToItem: attempt to make the item so spotlite visible by scrolling to it. Enabled by default, but it can be
+   disabled if causing issues.
    - parameter overlay: view builder that constructs the info panel to show with the help text.
    */
   public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
@@ -36,6 +38,7 @@ extension View {
     animationDuration: TimeInterval = 0.3,
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.8,
+    scrollToItem: Bool = true,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
     modifier(
@@ -47,6 +50,7 @@ extension View {
         animationDuration: animationDuration,
         blurRadius: blurRadius,
         dimmingOpacity: dimmingOpacity,
+        scrollToItem: scrollToItem,
         helpInfoGenerator: overlay
       )
     )
@@ -92,6 +96,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   let animationDuration: TimeInterval
   let blurRadius: CGFloat
   let dimmingOpacity: CGFloat
+  let scrollToItem: Bool
   let helpInfoGenerator: (ID, HelpInfoSpotlightOverlayActions) -> Overlay
 
   let horizontalPadding: CGFloat = 16
@@ -99,13 +104,25 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   let verticalPadding: CGFloat = 24
 
   func body(content: Content) -> some View {
-    ScrollViewReader { reader in
+    if scrollToItem {
+      ScrollViewReader { reader in
+        content
+          .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
+          .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
+          .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
+            GeometryReader { proxy in
+              spotlightOverlayContent(preferences: preferences, proxy: proxy, reader: reader)
+            }
+            .animation(.smooth(duration: animationDuration), value: selection)
+          }
+      }
+    } else {
       content
         .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
         .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
         .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
           GeometryReader { proxy in
-            spotlightOverlayContent(preferences: preferences, proxy: proxy, reader: reader)
+            spotlightOverlayContent(preferences: preferences, proxy: proxy)
           }
           .animation(.smooth(duration: animationDuration), value: selection)
         }
@@ -127,7 +144,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
-  private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy) -> some View {
+  private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy? = nil) -> some View {
     if let selected = selection, let anchor = preferences[selected] {
       let containerBounds = proxy.containerBounds
       let spotlightFrame = proxy[anchor]
@@ -176,14 +193,14 @@ extension HelpInfoSpotlightOverlayModifier {
     selection = nil
   }
 
-  private func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy) {
+  private func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
     if var index = orderedIDs.firstIndex(of: selected) {
       for _ in 0..<orderedIDs.count {
         index = index == orderedIDs.startIndex ? orderedIDs.endIndex - 1 : orderedIDs.index(before: index)
         let previous = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[previous] != nil {
-          reader.scrollTo(previous)
+          reader?.scrollTo(previous)
           self.pending = previous
           return
         }
@@ -192,14 +209,14 @@ extension HelpInfoSpotlightOverlayModifier {
     selection = nil
   }
 
-  private func nextAction(selected: ID, preferences: Value, reader: ScrollViewProxy) {
+  private func nextAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
     if var index = orderedIDs.firstIndex(of: selected) {
       for _ in 0..<orderedIDs.count {
         index = index == orderedIDs.endIndex - 1 ? orderedIDs.startIndex : orderedIDs.index(after: index)
         let next = orderedIDs[index]
         // Only use an ID if there is an anchor for it.
         if preferences[next] != nil {
-          reader.scrollTo(next)
+          reader?.scrollTo(next)
           self.pending = next
           return
         }
