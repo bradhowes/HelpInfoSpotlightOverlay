@@ -55,7 +55,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
   .padding(20)
   .background {
     RoundedRectangle(cornerRadius: 28)
-      .fill(colorScheme == .light ? .white : .black)
+      .fill(.background)
   }
   .shadow(color: (colorScheme == .dark ? Color.white : .black).opacity(0.20), radius: 24, y: 12)
 }
@@ -126,5 +126,16 @@ extension HelpInfo: CaseIterable, HelpInfoProvider {
 }
 
 #Preview {
+
+#if os(macOS)
+
   DemoAppView()
+    .frame(width: 400, height: 400)
+
+#else
+
+  DemoAppView()
+
+#endif
+
 }

@@ -160,6 +160,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
         spotlightMask(for: spotlightFrame)
           .zIndex(1)
         helpInfoGenerator(selected, actions)
+          .preferredColorScheme(colorScheme)
           .drawingGroup()
           .onGeometryChange(for: CGSize.self) {
             $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
@@ -382,7 +383,7 @@ extension View {
 /**
  Mostly from Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
  */
-struct TutorialSpotlightDemo: View {
+private struct TutorialSpotlightDemo: View {
   @Environment(\.colorScheme) var colorScheme
 
   enum Step: CaseIterable, HelpInfoProvider {
@@ -459,12 +460,6 @@ List of previous trips that have been taken.
   @State private var selection: Step?
   @State private var showSheet: Bool = false
 
-  let columns = [
-    GridItem(alignment: .leading),
-    GridItem(alignment: .leading),
-    GridItem(.fixed(40), alignment: .leading),
-  ]
-
   var body: some View {
     NavigationStack {
       ScrollView {
@@ -489,54 +484,13 @@ List of previous trips that have been taken.
 
           Button("Show Sheet") { showSheet.toggle() }
             .helpInfoViewTag(.showSheet)
+
+          pastTravel
+            .helpInfoViewTag(.pastTrips)
         }
         .helpInfoViewTag(.travelPlanner)
         .padding(24)
 
-        GroupBox("Past Trips") {
-          LazyVGrid(columns: columns) {
-            Section {
-              GridRow {
-                Text("Isle of Man")
-                Text("$123")
-                Text("1.3")
-              }
-              GridRow {
-                Text("Bermuda")
-                Text("$12,383")
-                Text("5.0")
-              }
-              GridRow {
-                Text("Saturn")
-                Text("$98,334,341")
-                Text("9.0")
-              }
-              GridRow {
-                Text("Fargo")
-                Text("$824")
-                Text("3.2")
-              }
-              GridRow {
-                Text("Mar-a-Lago")
-                Text("$33,234")
-                Text("0.0")
-              }
-            } header: {
-              LazyVGrid(columns: columns, spacing: 0) {
-                Text("Name")
-                Text("Price")
-                Text("Rating")
-              }
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-              .padding([.top, .bottom], 4)
-              .background(.background)
-            }
-          }
-          .padding([.leading, .trailing], 16.0)
-        }
-        .padding(24)
-        .helpInfoViewTag(.pastTrips)
       }
       // .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -592,6 +546,59 @@ List of previous trips that have been taken.
         filterMetric(title: "Price", value: "$420")
         filterMetric(title: "Rating", value: "4.8")
         filterMetric(title: "Transit", value: "18 min")
+      }
+    }
+    .padding(20)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(.tertiary, in: .rect(cornerRadius: 28))
+  }
+
+  private var pastTravel: some View {
+    let columns = [
+      GridItem(alignment: .leading),
+      GridItem(alignment: .leading),
+      GridItem(.fixed(40), alignment: .leading),
+    ]
+
+    return VStack(alignment: .leading, spacing: 14) {
+      Text("Past")
+        .font(.headline)
+
+      LazyVGrid(columns: columns) {
+        Section {
+          GridRow {
+            Text("Isle of Man")
+            Text("$123")
+            Text("1.3")
+          }
+          GridRow {
+            Text("Bermuda")
+            Text("$12,383")
+            Text("5.0")
+          }
+          GridRow {
+            Text("Saturn")
+            Text("$98,334,341")
+            Text("9.0")
+          }
+          GridRow {
+            Text("Fargo")
+            Text("$824")
+            Text("3.2")
+          }
+          GridRow {
+            Text("Mar-a-Lago")
+            Text("$33,234")
+            Text("0.0")
+          }
+        } header: {
+          LazyVGrid(columns: columns, spacing: 0) {
+            Text("Name")
+            Text("Price")
+            Text("Rating")
+          }
+        }
+        .font(.footnote)
       }
     }
     .padding(20)
@@ -748,7 +755,18 @@ extension View {
 }
 
 #Preview {
+
+#if os(macOS)
+
   TutorialSpotlightDemo()
+    .frame(width: 800, height: 600)
+
+#else
+
+  TutorialSpotlightDemo()
+
+#endif
+
 }
 
 #endif // DEBUG
