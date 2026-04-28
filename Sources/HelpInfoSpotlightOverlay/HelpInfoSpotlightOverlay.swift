@@ -381,7 +381,7 @@ extension View {
 #if DEBUG
 
 /**
- Mostly from Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
+ Based on Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
  */
 private struct TutorialSpotlightDemo: View {
   @Environment(\.colorScheme) var colorScheme
@@ -484,13 +484,12 @@ List of previous trips that have been taken.
 
           Button("Show Sheet") { showSheet.toggle() }
             .helpInfoViewTag(.showSheet)
-
-          pastTravel
-            .helpInfoViewTag(.pastTrips)
         }
         .helpInfoViewTag(.travelPlanner)
         .padding(24)
-
+        pastTravel
+          .padding(24)
+          .helpInfoViewTag(.pastTrips)
       }
       // .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -561,7 +560,7 @@ List of previous trips that have been taken.
     ]
 
     return VStack(alignment: .leading, spacing: 14) {
-      Text("Past")
+      Text("Past Travel")
         .font(.headline)
 
       LazyVGrid(columns: columns) {

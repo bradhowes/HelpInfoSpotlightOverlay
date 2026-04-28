@@ -6,7 +6,7 @@ import SwiftUI
  Custom layout for help info text views.
 
  The layout is not very robust, so best to limit what it manages to one or more `Text` views. It does guarantee the smallest
- bounding rectangle for the `Text` views it manages, and it will properly honor a `frame` `maxWidth` value if set.
+ bounding rectangle for the `Text` views it manages, and honors a `frame` `maxWidth` value if set.
  */
 public struct HelpInfoLayout: Layout {
   public let spacing: CGFloat
@@ -43,35 +43,64 @@ public struct HelpInfoLayout: Layout {
 #if DEBUG
 
 #Preview {
-  VStack(spacing: 8) {
-    Button("Login") {}
-    VStack {
-      HelpInfoLayout {
-        Text("Another Title")
-          .font(.title3.weight(.bold))
-        Text("The quick brown fox.")
-          .font(.footnote)
-      }
+  VStack(spacing: 32) {
+    HelpInfoLayout {
+      Text("Title Width")
+        .font(.title3.weight(.bold))
+      Text(
+"""
+The quick fox.
+The quick fox.
+"""
+      )
+        .font(.footnote)
     }
-    // .frame(maxWidth: 240)
-    .border(.black, width: 2)
+    .border(.black, width: 1)
     .background(.yellow)
-    VStack {
-      HelpInfoLayout {
-        Text("Title")
-          .font(.title3.weight(.bold))
-        Text(
+
+    HelpInfoLayout {
+      Text("Body Width")
+        .font(.title3.weight(.bold))
+      Text(
+"""
+The quick brown fox jumped.
+The quick brown fox sat.
+"""
+      )
+        .font(.footnote)
+    }
+    .border(.black, width: 1)
+    .background(.yellow)
+
+    HelpInfoLayout {
+      Text("Wrapped by Parent Width")
+        .font(.title3.weight(.bold))
+      Text(
 """
 The quick brown fox jumped over the lazy fox. \
 The quick brown fox jumped over the lazy fox. \
 The quick brown fox jumped over the lazy fox.
 """
-        )
-        .font(.footnote)
-      }
+      )
+      .font(.footnote)
     }
-    .frame(maxWidth: 320)
-    .border(.black, width: 2)
+    .border(.black, width: 1)
+    .background(.yellow)
+
+    HelpInfoLayout {
+      Text("Wrapped by maxWidth")
+        .font(.title3.weight(.bold))
+      Text(
+"""
+The quick brown fox jumped over the lazy fox. \
+The quick brown fox jumped over the lazy fox. \
+The quick brown fox jumped over the lazy fox.
+"""
+      )
+      .font(.footnote)
+    }
+    .frame(maxWidth: 260)
+    .border(.black, width: 1)
     .background(.yellow)
   }
 }
