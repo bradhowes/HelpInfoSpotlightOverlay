@@ -37,6 +37,8 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
       } label: {
         Image(systemName: "xmark")
       }
+      .accessibilityLabel("exit")
+      .accessibilityHint("Double tap to quit help spotlight")
     }
     HStack(spacing: 24) {
       Button {
@@ -44,11 +46,15 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
       } label: {
         Image(systemName: "arrowshape.left.fill")
       }
+      .accessibilityLabel("previous")
+      .accessibilityHint("Double tap to go to previous help item")
       Button {
         actions.next()
       } label: {
         Image(systemName: "arrowshape.right.fill")
       }
+      .accessibilityLabel("next")
+      .accessibilityHint("Double tap to go to next help item")
     }
     .fontWeight(.semibold)
   }
