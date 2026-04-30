@@ -64,12 +64,12 @@ extension View {
    - parameter id: the value to assign
    - returns: modified view
    */
-  public func helpInfoViewTag<ID: Hashable>(id: ID, scrollViewProxy: ScrollViewProxy? = nil) -> some View {
-    modifier(HelpInfoViewTagModifier(id: id, scrollViewProxy: scrollViewProxy))
+  public func helpInfoViewTag<ID: Hashable>(id: ID) -> some View {
+    modifier(HelpInfoViewTagModifier(id: id))
   }
 }
 
-struct Config<ID: Hashable, Overlay: View> {
+private struct Config<ID: Hashable, Overlay: View> {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   let orderedIDs: [ID]
@@ -117,7 +117,7 @@ struct Config<ID: Hashable, Overlay: View> {
 
  See ``helpInfoSpotlightOverlay`` View modifier for details.
  */
-struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
+private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
@@ -134,14 +134,30 @@ struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
   @Namespace private var spotlightAnimation
   @Environment(\.colorScheme) private var colorScheme
 
-  let windowManager = WindowManager<ID, Overlay>()
-
   func body(content: Content) -> some View {
-    content
-      .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
-      .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
-        spotlightOverlayContent(preferences: preferences)
+    if config.scrollToItem {
+      ScrollViewReader { reader in
+        content
+          .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
+          .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
+          .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
+            GeometryReader { proxy in
+              spotlightOverlayContent(preferences: preferences, proxy: proxy, reader: reader)
+            }
+            .animation(.smooth(duration: config.animationDuration), value: selection)
+          }
       }
+    } else {
+      content
+        .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
+        .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
+        .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
+          GeometryReader { proxy in
+            spotlightOverlayContent(preferences: preferences, proxy: proxy)
+          }
+          .animation(.smooth(duration: config.animationDuration), value: selection)
+        }
+    }
   }
 
   /**
@@ -155,28 +171,64 @@ struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
-  func spotlightOverlayContent(preferences: Value) -> some View {
+  private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy? = nil) -> some View {
     if let selected = selection, let anchor = preferences[selected] {
-      let _ = windowManager.show(selection: $selection, config: config, preferences: preferences)
+      let containerBounds = proxy.containerBounds
+      let spotlightFrame = proxy[anchor]
+        .insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
+        .offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
+      let actions = HelpInfoSpotlightOverlayActions(
+        dismiss: { self.dismissAction() },
+        previous: { self.previousAction(selected: selected, preferences: preferences, reader: reader) },
+        next: { self.nextAction(selected: selected, preferences: preferences, reader: reader) }
+      )
+
+      ZStack(alignment: .topLeading) {
+        spotlightMask(for: spotlightFrame)
+          .zIndex(1)
+        config.helpInfoGenerator(selected, actions)
+          .preferredColorScheme(colorScheme)
+          .drawingGroup()
+          .onGeometryChange(for: CGSize.self) {
+            $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
+          } action: { panelSize in
+            self.position = helpInfoPosition(for: spotlightFrame, panelSize: panelSize, in: containerBounds)
+          }
+          .frame(maxWidth: containerBounds.width - config.horizontalPadding * 2)
+          .position(
+            self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
+          .clipped()
+          .zIndex(2)
+      }
+      .frame(width: containerBounds.width, height: containerBounds.height)
+      .offset(x: -proxy.safeAreaInsets.leading, y: -proxy.safeAreaInsets.top)
+      .animation(.smooth(duration: config.animationDuration), value: position)
+      .onChange(of: pending) {
+        // Hack: postpone the update just a tad so that the anchor location will be valid after scrolling. What is a better way?
+        Task {
+          self.selection = pending
+        }
+      }
+    } else {
+      EmptyView()
     }
-    EmptyView()
   }
 }
 
 extension HelpInfoSpotlightOverlayModifier {
 
-  func dismissAction() {
+  private func dismissAction() {
     selection = nil
   }
 
-  func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
+  private func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
     if let value = config.previousId(selected: selected, preferences: preferences) {
       reader?.scrollTo(value)
       self.pending = value
     }
   }
 
-  func nextAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
+  private func nextAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {
     if let value = config.nextId(selected: selected, preferences: preferences) {
       reader?.scrollTo(value)
       self.pending = value
@@ -186,7 +238,7 @@ extension HelpInfoSpotlightOverlayModifier {
 
 extension HelpInfoSpotlightOverlayModifier {
 
-  var spotlightBackingColor: Color {
+  private var spotlightBackingColor: Color {
     colorScheme == .light ? .black : .white
   }
 
@@ -197,7 +249,7 @@ extension HelpInfoSpotlightOverlayModifier {
    - parameter focusArea: the area to "punch out" to spotlight an area on the screen.
    - returns: new mask view
    */
-  func spotlightMask(for focusArea: CGRect) -> some View {
+  private func spotlightMask(for focusArea: CGRect) -> some View {
     ZStack {
       spotlightBackingColor
         .opacity(config.dimmingOpacity)
@@ -226,7 +278,7 @@ extension HelpInfoSpotlightOverlayModifier {
    - parameter container: the bounds of the view to constrain the placement of the help info view
    - returns: the location to use for the panel
    */
-  func helpInfoPosition(for focusFrame: CGRect, panelSize: CGSize, in container: CGRect) -> CGPoint {
+  private func helpInfoPosition(for focusFrame: CGRect, panelSize: CGSize, in container: CGRect) -> CGPoint {
     let panelWidth2 = panelSize.width / 2
     let panelHeight2 = panelSize.height / 2
 
@@ -253,16 +305,11 @@ extension HelpInfoSpotlightOverlayModifier {
   }
 }
 
-struct PreferenceKeyValue {
-  let anchor: Anchor<CGRect>
-  let scrollViewProxy: ScrollViewProxy?
-}
-
 /**
  Mapping of view help item ID tags and view anchor bounds made available via SwiftUI preferences system.
  */
-struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
-  typealias Value = [ID: PreferenceKeyValue]
+private struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
+  typealias Value = [ID: Anchor<CGRect>]
 
   static var defaultValue: Value { [:] }
 
@@ -280,10 +327,8 @@ struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
  Note that during tests, it is possible that `namespace` is not installed, thus the need to conditionally apply the
  `matchedGeometryEffect` modifier.
  */
-struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
+private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
   let id: ID
-  let scrollViewProxy: ScrollViewProxy?
-
   @Environment(\.helpInfoSpotlightAnimationNamespace) private var namespace
 
   func body(content: Content) -> some View {
@@ -291,25 +336,25 @@ struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
       content
         .matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center, isSource: true)
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
-          $0[id] = .init(anchor: $1, scrollViewProxy: scrollViewProxy)
+          $0[id] = $1
         }
         .id(id)
     } else {
       content
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
-          $0[id] = .init(anchor: $1, scrollViewProxy: scrollViewProxy)
+          $0[id] = $1
         }
         .id(id)
     }
   }
 }
 
-enum HelpInfoSpotlightCoordinateSpace {
+private enum HelpInfoSpotlightCoordinateSpace {
   // Shared coordinate space name used by spotlight sources and the container.
   static let name = "helpInfoSpotlightCoordinateSpace"
 }
 
-extension GeometryProxy {
+fileprivate extension GeometryProxy {
 
   var containerBounds: CGRect {
     .init(
@@ -322,14 +367,14 @@ extension GeometryProxy {
   }
 }
 
-struct HelpInfoSpotlightNamespaceEnvironmentKey: EnvironmentKey {
-  static var defaultValue: Namespace.ID? { nil }
+private struct HelpInfoSpotlightNamespaceEnvironmentKey: EnvironmentKey {
+  fileprivate static var defaultValue: Namespace.ID? { nil }
 }
 
 extension EnvironmentValues {
 
   /// Custom EnvironmentValues property that provides the help spotlight animation namespace.
-  var helpInfoSpotlightAnimationNamespace: Namespace.ID? {
+  fileprivate var helpInfoSpotlightAnimationNamespace: Namespace.ID? {
     get { self[HelpInfoSpotlightNamespaceEnvironmentKey.self] }
     set { self[HelpInfoSpotlightNamespaceEnvironmentKey.self] = newValue }
   }
@@ -337,7 +382,7 @@ extension EnvironmentValues {
 
 extension View {
 
-  func helpInfoSpotlightAnimationNamespace(_ value: Namespace.ID) -> some View {
+  fileprivate func helpInfoSpotlightAnimationNamespace(_ value: Namespace.ID) -> some View {
     environment(\.helpInfoSpotlightAnimationNamespace, value)
   }
 }
@@ -426,55 +471,53 @@ List of previous trips that have been taken.
 
   var body: some View {
     NavigationStack {
-      ScrollViewReader { proxy in
-        ScrollView {
-          VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 12) {
-              Text("Travel Planner")
-                .font(.largeTitle.bold())
+      ScrollView {
+        VStack(spacing: 24) {
+          VStack(alignment: .leading, spacing: 12) {
+            Text("Travel Planner")
+              .font(.largeTitle.bold())
 
-              Text("Build a trip, fine-tune filters, and finish booking in a couple of taps.")
-                .foregroundStyle(.secondary)
+            Text("Build a trip, fine-tune filters, and finish booking in a couple of taps.")
+              .foregroundStyle(.secondary)
 
-              HStack(spacing: 12) {
-                statCard(title: "12", subtitle: "Routes")
-                statCard(title: "5", subtitle: "Cities")
-                statCard(title: "3", subtitle: "Days")
-              }
+            HStack(spacing: 12) {
+              statCard(title: "12", subtitle: "Routes")
+              statCard(title: "5", subtitle: "Cities")
+              statCard(title: "3", subtitle: "Days")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            filterPanel
-              .helpInfoViewTag(.filters, scrollViewProxy: proxy)
-
-            Button("Show Sheet") { showSheet.toggle() }
-              .helpInfoViewTag(.showSheet, scrollViewProxy: proxy)
           }
-          .helpInfoViewTag(.travelPlanner, scrollViewProxy: proxy)
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+          filterPanel
+            .helpInfoViewTag(.filters)
+
+          Button("Show Sheet") { showSheet.toggle() }
+            .helpInfoViewTag(.showSheet)
+        }
+        .helpInfoViewTag(.travelPlanner)
+        .padding(24)
+        pastTravel
           .padding(24)
-          pastTravel
-            .padding(24)
-            .helpInfoViewTag(.pastTrips, scrollViewProxy: proxy)
+          .helpInfoViewTag(.pastTrips)
+      }
+      // .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .automatic) {
+          profileButton
+            .helpInfoViewTag(.profile)
         }
-        // .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .automatic) {
-            profileButton
-              .helpInfoViewTag(.profile)
-          }
-          ToolbarItem(placement: .automatic) {
-            Button {
-              selection = .profile
-            } label: {
-              Image(systemName: "questionmark.circle")
-            }
+        ToolbarItem(placement: .automatic) {
+          Button {
+            selection = .profile
+          } label: {
+            Image(systemName: "questionmark.circle")
           }
         }
-        .safeAreaInset(edge: .bottom) {
-          checkoutButton
-            .helpInfoViewTag(.checkout)
-            .padding()
-        }
+      }
+      .safeAreaInset(edge: .bottom) {
+        checkoutButton
+          .helpInfoViewTag(.checkout)
+          .padding()
       }
     }
     .sheet(isPresented: $showSheet, onDismiss: {
@@ -715,11 +758,11 @@ struct SheetSpotlightDemo: View {
 
 // Extensions to support auto-completion of `Step` enum values.
 extension View {
-  fileprivate func helpInfoViewTag(_ id: TutorialSpotlightDemo.Step, scrollViewProxy: ScrollViewProxy? = nil) -> some View {
-    helpInfoViewTag(id: id, scrollViewProxy: scrollViewProxy)
+  fileprivate func helpInfoViewTag(_ id: TutorialSpotlightDemo.Step) -> some View {
+    helpInfoViewTag(id: id)
   }
-  fileprivate func helpInfoViewTag(_ id: SheetSpotlightDemo.Step, scrollViewProxy: ScrollViewProxy? = nil) -> some View {
-    helpInfoViewTag(id: id, scrollViewProxy: scrollViewProxy)
+  fileprivate func helpInfoViewTag(_ id: SheetSpotlightDemo.Step) -> some View {
+    helpInfoViewTag(id: id)
   }
 }
 

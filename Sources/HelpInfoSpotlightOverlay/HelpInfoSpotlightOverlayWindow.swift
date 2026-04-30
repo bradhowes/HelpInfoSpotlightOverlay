@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+#if false
+
 // Based on code found in https://github.com/mmellau/swift-beacon
 
 @MainActor
@@ -231,129 +233,7 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   }
 }
 
-//
-//struct BeaconCanvas: View {
-//  let regions: [BeaconRegion]
-//  let style: BeaconStyle
-//  let animation: Animation
-//  let coordinator: BeaconCoordinator
-//
-//  var body: some View {
-//    ZStack {
-//      ZStack {
-//        style.color.opacity(style.opacity)
-//          .onTapGesture {
-//            coordinator.handleInteraction(.tappedOutside)
-//          }
-//          .accessibilityLabel("Dismiss spotlight")
-//          .accessibilityHint("Double tap to dismiss")
-//          .accessibilityAddTraits(.isButton)
-//
-//        if regions.count == 1, let region = regions.first {
-//          AnimatedCutout(
-//            frame: region.paddedFrame,
-//            cornerRadius: region.cornerRadius,
-//            regionId: region.id,
-//            animation: animation,
-//            coordinator: coordinator
-//          )
-//        } else {
-//          ForEach(regions) { region in
-//            StaticCutout(region: region, coordinator: coordinator)
-//          }
-//        }
-//      }
-//      .compositingGroup()
-//      .ignoresSafeArea()
-//
-//      ForEach(accessories, id: \.targetId) { accessory in
-//        if let region = regions.first(where: { $0.id == accessory.targetId }) {
-//          Color.clear
-//            .frame(width: region.paddedFrame.width, height: region.paddedFrame.height)
-//            .overlay(alignment: accessory.alignment) {
-//              DelayedFadeIn {
-//                accessory.builder()
-//                  .fixedSize()
-//                  .offset(x: accessory.offset.width, y: accessory.offset.height)
-//                  .allowsHitTesting(false)
-//              }
-//            }
-//            .position(x: region.paddedFrame.midX, y: region.paddedFrame.midY)
-//            .animation(animation, value: region.paddedFrame)
-//        }
-//      }
-//    }
-//    .ignoresSafeArea()
-//    .accessibilityAddTraits(.isModal)
-//    .accessibilityAction(.escape) {
-//      Beacon.dismiss()
-//    }
-//  }
-//
-//  private var accessories: [AccessoryConfiguration] {
-//    coordinator.currentPresentation?.accessories ?? []
-//  }
-//}
-//
-//private struct DelayedFadeIn<Content: View>: View {
-//  @ViewBuilder let content: Content
-//  @State private var isVisible = false
-//
-//  var body: some View {
-//    content
-//      .opacity(isVisible ? 1 : 0)
-//      .onAppear {
-//        withAnimation(.easeOut(duration: 0.25).delay(0.35)) {
-//          isVisible = true
-//        }
-//      }
-//  }
-//}
-//
-//private struct AnimatedCutout: View {
-//  let frame: CGRect
-//  let cornerRadius: CGFloat
-//  let regionId: String
-//  let animation: Animation
-//  let coordinator: BeaconCoordinator
-//
-//  var body: some View {
-//    RoundedRectangle(cornerRadius: cornerRadius)
-//      .fill(.white)
-//      .frame(width: frame.width, height: frame.height)
-//      .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
-//      .onTapGesture {
-//        coordinator.handleInteraction(.tappedRegion(regionId))
-//      }
-//      .position(x: frame.midX, y: frame.midY)
-//      .blendMode(.destinationOut)
-//      .animation(animation, value: frame)
-//      .animation(animation, value: cornerRadius)
-//      .accessibilityLabel("Highlighted element")
-//      .accessibilityHint("Double tap to continue")
-//      .accessibilityAddTraits(.isButton)
-//  }
-//}
-//
-//private struct StaticCutout: View {
-//  let region: BeaconRegion
-//  let coordinator: BeaconCoordinator
-//
-//  var body: some View {
-//    RoundedRectangle(cornerRadius: region.cornerRadius)
-//      .fill(.white)
-//      .frame(width: region.paddedFrame.width, height: region.paddedFrame.height)
-//      .contentShape(RoundedRectangle(cornerRadius: region.cornerRadius))
-//      .onTapGesture {
-//        coordinator.handleInteraction(.tappedRegion(region.id))
-//      }
-//      .position(x: region.paddedFrame.midX, y: region.paddedFrame.midY)
-//      .blendMode(.destinationOut)
-//      .accessibilityLabel("Highlighted element")
-//      .accessibilityHint("Double tap to continue")
-//      .accessibilityAddTraits(.isButton)
-//  }
-//}
+#endif // false
 
 #if DEBUG
 
