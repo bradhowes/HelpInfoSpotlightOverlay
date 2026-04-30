@@ -57,7 +57,6 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
     RoundedRectangle(cornerRadius: 28)
       .fill(.background)
   }
-  .shadow(color: (colorScheme == .dark ? Color.white : .black).opacity(0.20), radius: 24, y: 12)
 }
 
 private enum HelpInfo {
