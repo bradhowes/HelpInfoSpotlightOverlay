@@ -69,6 +69,9 @@ extension View {
   }
 }
 
+/**
+ Container of configuration items and methods to walk collection of help item IDs.
+ */
 private struct Config<ID: Hashable, Overlay: View> {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
@@ -204,7 +207,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
       .offset(x: -proxy.safeAreaInsets.leading, y: -proxy.safeAreaInsets.top)
       .animation(.smooth(duration: config.animationDuration), value: position)
       .onChange(of: pending) {
-        // Hack: postpone the update just a tad so that the anchor location will be valid after scrolling. What is a better way?
+        // Hack: postpone the update just a tad so that the anchor location will be valid after scrolling. Is there a better way?
         Task {
           self.selection = pending
         }
@@ -218,7 +221,8 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
 extension HelpInfoSpotlightOverlayModifier {
 
   private func dismissAction() {
-    selection = nil
+    self.pending = nil
+    self.selection = nil
   }
 
   private func previousAction(selected: ID, preferences: Value, reader: ScrollViewProxy?) {

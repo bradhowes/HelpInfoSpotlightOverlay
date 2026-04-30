@@ -1,7 +1,7 @@
+#if false
+
 import SwiftUI
 import UIKit
-
-#if false
 
 // Based on code found in https://github.com/mmellau/swift-beacon
 
@@ -233,8 +233,6 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   }
 }
 
-#endif // false
-
 #if DEBUG
 
 #Preview {
@@ -253,3 +251,5 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 }
 
 #endif // DEBUG
+
+#endif // false

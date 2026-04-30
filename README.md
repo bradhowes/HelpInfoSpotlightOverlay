@@ -78,9 +78,7 @@ struct DemoAppView: View {
 The collection `HelpInfo` enum cases could be simplified by extending `HelpInfo` with `CaseIterable` to make available 
 `HelpInfo.allCases`.
 
-See the
-[DemoAppView](https://github.com/bradhowes/HelpInfoSpotlightOverlay/blob/c569fa3ec3e9f2ea6b4fc046d93128840114fb2e/Sources/HelpInfoSpotlightOverlay/HelpInfoOverlay.swift#L74)
-definition for the finished example. You can also demo it in the Xcode preview for the file.
+See the [DemoAppView][dav] definition for the finished example. You can also demo it in the Xcode preview for the file.
 
 The last missing piece is to add to `HelpInfo` the `HelpInfoProvider` conformance so that the `helpInfoOverlay` function can 
 extract the help text required to show to the user:
@@ -126,13 +124,22 @@ your SwiftUI code.
 
 ## Origins
 
-The code in this package derived from code in the [TutorialSpotlight](https://github.com/Livsy90/TutorialSpotlight) 
+The code in this package derived from code in the [TutorialSpotlight][ts]
 package by Artem Mirzabekian. However, there were sufficient changes that I created my
 own. (the demo page shown above is largely from his source with some adjustments to handle "dark" mode.)
 
+## Alternatives
+
+Besides the [TutorialSpotlight][ts] mentioned above, another nice alternative is [Beacon][beacon]. It offers a way to actually drive
+a guided tour of your app's features without too much effort. It also works nicely with sheets, unlike my code. I even looked into 
+adopting how it manages a top-level UI window, but the integration never felt right. Definitely give [Beacon][beacon] a shot for a
+robust solution.
 
 [spi]: https://swiftpackageindex.com/bradhowes/HelpInfoSpotlightOverlay
 [spiv]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlay%2Fbadge%3Ftype%3Dswift-versions
 [spip]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlay%2Fbadge%3Ftype%3Dplatforms
 [mit]: https://img.shields.io/badge/License-MIT-A31F34.svg
 [license]: https://opensource.org/licenses/MIT
+[ts]: https://github.com/Livsy90/TutorialSpotlight
+[beacon]: https://github.com/mmellau/swift-beacon
+[dav]: https://github.com/bradhowes/HelpInfoSpotlightOverlay/blob/c569fa3ec3e9f2ea6b4fc046d93128840114fb2e/Sources/HelpInfoSpotlightOverlay/HelpInfoOverlay.swift#L74
