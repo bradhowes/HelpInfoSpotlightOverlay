@@ -1,5 +1,3 @@
-#if false
-
 import SwiftUI
 import UIKit
 
@@ -12,7 +10,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
 
   init() {}
 
-  func show(selection: Binding<ID?>, config: Config<ID, Overlay>, preferences: [ID: PreferenceKeyValue]) {
+  func show(selection: Binding<ID?>, config: Config<ID, Overlay>, preferences: [ID: Anchor<CGRect>], scrollViewProxy: ScrollViewProxy?) {
     guard
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
@@ -32,7 +30,8 @@ final class WindowManager<ID: Hashable, Overlay: View> {
       dismiss: { [weak self] in
         self?.hide(after: .seconds(config.animationDuration))
       },
-      containerBounds: window.frame
+      containerBounds: window.frame,
+      scrollViewProxy: scrollViewProxy
     )
 
     let controller = UIHostingController(rootView: overlayView)
@@ -60,9 +59,10 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 
   @Binding var selection: ID?
   let config: Config<ID, Overlay>
-  let preferences: [ID: PreferenceKeyValue]
+  let preferences: [ID: Anchor<CGRect>]
   let dismiss: () -> Void
   let containerBounds: CGRect
+  let scrollViewProxy: ScrollViewProxy?
 
   /// The position of the view displaying the help text. This is dynamically calculated based on the location of the item being
   /// spotlit, and the size of the help text view.
@@ -81,10 +81,9 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
-    if let selected = selection, let preferenceValue = preferences[selected] {
+    if let selected = selection, let anchor = preferences[selected] {
       GeometryReader { proxy in
-        let scrollViewProxy = preferenceValue.scrollViewProxy
-        let spotlightFrame = proxy[preferenceValue.anchor]
+        let spotlightFrame = proxy[anchor]
           .insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
           .offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
         let actions = HelpInfoSpotlightOverlayActions(
@@ -251,5 +250,3 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 }
 
 #endif // DEBUG
-
-#endif // false

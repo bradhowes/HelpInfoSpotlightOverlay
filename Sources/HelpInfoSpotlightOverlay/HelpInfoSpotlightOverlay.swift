@@ -4,6 +4,11 @@
 
 import SwiftUI
 
+public enum WindowedMode {
+  case useCustomWindow
+  case none
+}
+
 extension View {
 
   /**
@@ -28,6 +33,7 @@ extension View {
    - parameter dimmingOpacity: the amount of dimming applied to the whole app except the area being spotlit.
    - parameter scrollToItem: attempt to make the item so spotlite visible by scrolling to it. Enabled by default, but it can be
    disabled if causing issues.
+   - parameter windowedMode: if `useCustomWindow` manage overlays in a new `UIWindow` shown during help spotlighting.
    - parameter overlay: view builder that constructs the info panel to show with the help text.
    */
   public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
@@ -39,6 +45,7 @@ extension View {
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.8,
     scrollToItem: Bool = true,
+    windowedMode: WindowedMode = .none,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
     modifier(
@@ -52,8 +59,10 @@ extension View {
           blurRadius: blurRadius,
           dimmingOpacity: dimmingOpacity,
           scrollToItem: scrollToItem,
+          windowedMode: windowedMode,
           helpInfoGenerator: overlay
-        )
+        ),
+        windowManager: windowedMode == .useCustomWindow ? .init() : nil
       )
     )
   }
@@ -70,52 +79,6 @@ extension View {
 }
 
 /**
- Container of configuration items and methods to walk collection of help item IDs.
- */
-private struct Config<ID: Hashable, Overlay: View> {
-  typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
-
-  let orderedIDs: [ID]
-  let spotlightPadding: CGFloat
-  let cornerRadius: CGFloat
-  let animationDuration: TimeInterval
-  let blurRadius: CGFloat
-  let dimmingOpacity: CGFloat
-  let scrollToItem: Bool
-  let helpInfoGenerator: (ID, HelpInfoSpotlightOverlayActions) -> Overlay
-
-  let horizontalPadding: CGFloat = 16
-  let verticalSeparation: CGFloat = 24
-  let verticalPadding: CGFloat = 24
-
-  func previousId(selected: ID, preferences: Value) -> ID? {
-    if var index = orderedIDs.firstIndex(of: selected) {
-      for _ in 0..<orderedIDs.count {
-        index = index == orderedIDs.startIndex ? orderedIDs.endIndex - 1 : orderedIDs.index(before: index)
-        let candidate = orderedIDs[index]
-        if preferences[candidate] != nil {
-          return candidate
-        }
-      }
-    }
-    return nil
-  }
-
-  func nextId(selected: ID, preferences: Value) -> ID? {
-    if var index = orderedIDs.firstIndex(of: selected) {
-      for _ in 0..<orderedIDs.count {
-        index = index == orderedIDs.endIndex - 1 ? orderedIDs.startIndex : orderedIDs.index(after: index)
-        let candidate = orderedIDs[index]
-        if preferences[candidate] != nil {
-          return candidate
-        }
-      }
-    }
-    return nil
-  }
-}
-
-/**
  View modifier that handles the display of a spotlight on a help item.
 
  See ``helpInfoSpotlightOverlay`` View modifier for details.
@@ -125,6 +88,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
 
   @Binding var selection: ID?
   let config: Config<ID, Overlay>
+  let windowManager: WindowManager<ID, Overlay>?
 
   /// The position of the view displaying the help text. This is dynamically calculated based on the location of the item being
   /// spotlit, and the size of the help text view.
@@ -175,7 +139,12 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
    */
   @ViewBuilder
   private func spotlightOverlayContent(preferences: Value, proxy: GeometryProxy, reader: ScrollViewProxy? = nil) -> some View {
-    if let selected = selection, let anchor = preferences[selected] {
+    if let windowManager {
+      if let selected = selection, let anchor = preferences[selected] {
+        let _ = windowManager.show(selection: $selection, config: config, preferences: preferences, scrollViewProxy: reader)
+      }
+      EmptyView()
+    } else if let selected = selection, let anchor = preferences[selected] {
       let containerBounds = proxy.containerBounds
       let spotlightFrame = proxy[anchor]
         .insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
@@ -312,7 +281,7 @@ extension HelpInfoSpotlightOverlayModifier {
 /**
  Mapping of view help item ID tags and view anchor bounds made available via SwiftUI preferences system.
  */
-private struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
+struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
   typealias Value = [ID: Anchor<CGRect>]
 
   static var defaultValue: Value { [:] }
@@ -530,7 +499,12 @@ List of previous trips that have been taken.
       SheetSpotlightDemo()
     })
     .preferredColorScheme(colorScheme)
-    .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: Step.allCases, overlay: helpInfoOverlay)
+    .helpInfoSpotlightOverlay(
+      selection: $selection,
+      orderedIDs: Step.allCases,
+      windowedMode: .useCustomWindow,
+      overlay: helpInfoOverlay
+    )
   }
 
   private var profileButton: some View {
