@@ -117,6 +117,8 @@ behavior and appearance of the spotlite (defaults given in parentheses):
 * `blurRadius` -- the amount of blurring to apply to the edge of the spotlight. (6)
 * `dimmingOpacity` -- how opaque the overlay is that covers the root view, minus the spotlight region. (0.8)
 * `scrollToItem` -- when `true`, attempts to make visible the view to spotlight. (true)
+* `windowedMode` -- if set to `.useCustomWindow`, installs the overlay in a custom UIWindow. Otherwise, installs the overlay in the
+view hiearchy attached to the view modifier.
 
 The `scrollToItem` is done by wrapping the main view in a `ScrollViewReader` and then calling `scrollTo` with the ID of the 
 view to highlight. This seems to work OK, but it can be disabled if the use of the `ScrollViewReader` is causing issues with 
