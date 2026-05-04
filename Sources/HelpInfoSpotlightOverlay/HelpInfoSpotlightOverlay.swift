@@ -84,21 +84,12 @@ extension View {
  See ``helpInfoSpotlightOverlay`` View modifier for details.
  */
 private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
-  typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
+  typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
   let config: Config<ID, Overlay>
   let windowManager: WindowManager<ID, Overlay>?
-
-  /// The position of the view displaying the help text. This is dynamically calculated based on the location of the item being
-  /// spotlit, and the size of the help text view.
-  @State private var position: CGPoint = .zero
-  /// When moving to the previous or next anchor, we first scroll to it and set `pending` in order to delay calulation of
-  /// the info view position until the anchor is in the new location. An `onChange` modifier in the view from
-  /// `spotlightOverlayContent` will set `selection` with `pending`.
-  @State private var pending: ID?
-
-  @Namespace private var spotlightAnimation
+  @Namespace private var animationNamespace
   @Environment(\.colorScheme) private var colorScheme
 
   func body(content: Content) -> some View {
@@ -111,13 +102,20 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
     }
   }
 
+  /**
+   Inject the mapping of help item IDs and their anchor geometries into an overlay view.
+
+   - parameter content: the view being modified
+   - parameter scrollViewProxy: the `ScrollViewProxy` to use to make an item visible on the screen.
+   - returns: modified view
+   */
   private func contentModifier(_ content: Content, scrollViewProxy: ScrollViewProxy?) -> some View {
     content
       .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
-      .helpInfoSpotlightAnimationNamespace(spotlightAnimation)
-      .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { preferences in
+      .helpInfoSpotlightAnimationNamespace(animationNamespace)
+      .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { anchors in
         GeometryReader { geometryProxy in
-          spotlightOverlayContent(preferences: preferences, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
+          spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
         }
       }
       .animation(.smooth(duration: config.animationDuration), value: selection)
@@ -128,37 +126,46 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
    This is the main entry point for spotlight overlay. As the ``selection`` value changes, the spotlight will move to the new view,
    and the contents of the info view will change to show the help text for the new view.
 
-   - parameter preferences: the collection of known UI elements with `Anchor<CGRect>` values.
-   - parameter proxy: a `GeometryProxy` to use to obtain frame values from the anchors.
+   - parameter anchors: the collection of known UI elements with `Anchor<CGRect>` values.
+   - parameter geometryProxy: a `GeometryProxy` to use to obtain frame values from the anchors.
+   - parameter scrollViewProxy: a `ScrollViewProxy` to use to scroll help items into view.
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
   private func spotlightOverlayContent(
-    preferences: Value,
+    anchors: AnchorMap,
     geometryProxy: GeometryProxy,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
-    if let selected = selection, let anchor = preferences[selected] {
+    if let selected = selection, let anchor = anchors[selected] {
       if let windowManager {
+
+        // When using a top-level window to host the spotlight overlay, we need to create and show the window and its overlay view.
+        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
         let _ = windowManager.show(
           selection: $selection,
           config: config,
-          preferences: preferences,
+          anchors: anchors,
           scrollViewProxy: scrollViewProxy,
-          animationNamespace: spotlightAnimation
+          animationNamespace: animationNamespace
         )
+        // The top-level window is showing the spotlight overlay, so nothing to inject here.
         EmptyView()
       } else {
-        SpotlightOverlayContent(
+        // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
+        // compared to windowed mode.
+        SpotlightOverlay(
           selection: $selection,
-          spotlightAnimation: spotlightAnimation,
+          animationNamespace: animationNamespace,
           config: config,
-          preferences: preferences,
+          anchors: anchors,
           geometryProxy: geometryProxy,
           scrollViewProxy: scrollViewProxy,
           selected: selected,
           anchor: anchor,
-          dismiss: {}
+          dismissAction: {
+            self.selection = nil
+          }
         )
       }
     } else {
@@ -167,21 +174,24 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   }
 }
 
-struct SpotlightOverlayContent<ID: Hashable, Overlay: View>: View {
-  typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
+/**
+ View that shows the spotlight overlay mask and the information card with text about the item in the spotlight.
+ */
+struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
+  typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
   @State var pending: ID?
   @State var position: CGPoint = .zero
-  let spotlightAnimation: Namespace.ID
+  let animationNamespace: Namespace.ID
 
   let config: Config<ID, Overlay>
-  let preferences: Value
+  let anchors: AnchorMap
   let geometryProxy: GeometryProxy
   let scrollViewProxy: ScrollViewProxy?
   let selected: ID
   let anchor: Anchor<CGRect>
-  let dismiss: () -> Void
+  let dismissAction: () -> Void
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -193,16 +203,25 @@ struct SpotlightOverlayContent<ID: Hashable, Overlay: View>: View {
   }
   var actions: HelpInfoSpotlightOverlayActions {
     .init(
-      dismiss: { self.dismissAction() },
-      previous: { self.previousAction(selected: selected, preferences: preferences, scrollViewProxy: scrollViewProxy) },
-      next: { self.nextAction(selected: selected, preferences: preferences, scrollViewProxy: scrollViewProxy) }
+      dismiss: self.dismissAction,
+      previous: { self.previousAction(selected: selected, anchors: anchors, scrollViewProxy: scrollViewProxy) },
+      next: { self.nextAction(selected: selected, anchors: anchors, scrollViewProxy: scrollViewProxy) }
     )
   }
 
   var body: some View {
     ZStack(alignment: .topLeading) {
-      spotlightMask(for: spotlightFrame)
-        .zIndex(1)
+
+      // The mask that dims everything on the screen but the item being focused on.
+      SpotlightMask(
+        config: config,
+        selection: selected,
+        focusArea: spotlightFrame,
+        animationNamespace: animationNamespace,
+        dismissAction: actions.dismiss
+      ).zIndex(1)
+
+      // The information card that shows the help info for the item being focused on.
       config.helpInfoGenerator(selected, actions)
         .preferredColorScheme(colorScheme)
         .drawingGroup()
@@ -221,61 +240,24 @@ struct SpotlightOverlayContent<ID: Hashable, Overlay: View>: View {
     .offset(x: -geometryProxy.safeAreaInsets.leading, y: -geometryProxy.safeAreaInsets.top)
     .animation(.smooth(duration: config.animationDuration), value: position)
     .onChange(of: pending) {
-      // Hack: postpone the update just a tad so that the anchor location will be valid after scrolling. Is there a better way?
+      // Postpone the update just a tad so that the anchor location will be valid after scrolling.
       Task {
         self.selection = pending
       }
     }
   }
 
-  private func dismissAction() {
-    self.pending = nil
-    self.selection = nil
-    self.dismiss()
-  }
-
-  private func previousAction(selected: ID, preferences: Value, scrollViewProxy: ScrollViewProxy?) {
-    if let value = config.previousId(selected: selected, preferences: preferences) {
+  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
+    if let value = config.previousId(selected: selected, anchors: anchors) {
       scrollViewProxy?.scrollTo(value)
       self.pending = value
     }
   }
 
-  private func nextAction(selected: ID, preferences: Value, scrollViewProxy: ScrollViewProxy?) {
-    if let value = config.nextId(selected: selected, preferences: preferences) {
+  private func nextAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
+    if let value = config.nextId(selected: selected, anchors: anchors) {
       scrollViewProxy?.scrollTo(value)
       self.pending = value
-    }
-  }
-
-  private var spotlightBackingColor: Color {
-    colorScheme == .light ? .black : .white
-  }
-
-  /**
-   Create a composite full-screen image that dims everything but the indicated region. Uses `matchedGeometryEffect` so that the
-   spotlight animates from one region to the next. Tapping anywhere in the mask will dismiss the spotlight.
-
-   - parameter focusArea: the area to "punch out" to spotlight an area on the screen.
-   - returns: new mask view
-   */
-  private func spotlightMask(for focusArea: CGRect) -> some View {
-    ZStack {
-      spotlightBackingColor
-        .opacity(config.dimmingOpacity)
-        .zIndex(3)
-      RoundedRectangle(cornerRadius: config.cornerRadius)
-        .frame(width: focusArea.width, height: focusArea.height)
-        .position(x: focusArea.midX, y: focusArea.midY)
-        .matchedGeometryEffect(id: selection, in: spotlightAnimation, properties: .frame, anchor: .center, isSource: false)
-        .blur(radius: config.blurRadius)
-        .blendMode(.destinationOut)
-        .zIndex(4)
-    }
-    .compositingGroup()
-    .contentShape(.rect)
-    .onTapGesture {
-      dismissAction()
     }
   }
 
@@ -315,9 +297,13 @@ struct SpotlightOverlayContent<ID: Hashable, Overlay: View>: View {
   }
 }
 
+/**
+ Create a composite full-screen image that dims everything but the indicated region. Uses `matchedGeometryEffect` so that the
+ spotlight animates from one region to the next. Tapping anywhere in the mask will dismiss the spotlight.
+ */
 struct SpotlightMask<ID: Hashable, Overlay: View>: View {
   let config: Config<ID, Overlay>
-  let selection: ID
+  let selection: ID?
   let focusArea: CGRect
   let animationNamespace: Namespace.ID
   let dismissAction: () -> Void
@@ -326,9 +312,13 @@ struct SpotlightMask<ID: Hashable, Overlay: View>: View {
 
   var body: some View {
     ZStack {
+
+      // The mask that dims everything on the screen.
       spotlightBackingColor
         .opacity(config.dimmingOpacity)
         .zIndex(3)
+
+      // The region that shows the item to spotlight.
       RoundedRectangle(cornerRadius: config.cornerRadius)
         .frame(width: focusArea.width, height: focusArea.height)
         .position(x: focusArea.midX, y: focusArea.midY)
@@ -350,7 +340,8 @@ struct SpotlightMask<ID: Hashable, Overlay: View>: View {
 }
 
 /**
- Mapping of view help item ID tags and view anchor bounds made available via SwiftUI preferences system.
+ Mapping of view help item ID tags and view anchor geometries made available via SwiftUI preferences system. These are used by the
+ spotlight overlays to move from item to item in the view hiearchy.
  */
 struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
   typealias Value = [ID: Anchor<CGRect>]
@@ -395,10 +386,10 @@ private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
 
 private enum HelpInfoSpotlightCoordinateSpace {
   // Shared coordinate space name used by spotlight sources and the container.
-  static let name = "helpInfoSpotlightCoordinateSpace"
+  static let name = "HelpInfoSpotlightCoordinateSpace"
 }
 
-fileprivate extension GeometryProxy {
+extension GeometryProxy {
 
   var containerBounds: CGRect {
     .init(
@@ -432,388 +423,6 @@ extension View {
 }
 
 #if DEBUG
-
-/**
- Based on Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
- */
-struct TutorialSpotlightDemo: View {
-  @Environment(\.colorScheme) var colorScheme
-
-  enum Step: CaseIterable, HelpInfoProvider {
-    case profile
-    case travelPlanner
-    case filters
-    case budgetFilter
-    case familyFilter
-    case foodFilter
-    case showSheet
-    case pastTrips
-    case checkout
-
-    var title: LocalizedStringKey {
-      switch self {
-      case .profile: "Profile"
-      case .travelPlanner: "Travel Planner"
-      case .filters: "Filters"
-      case .budgetFilter: "Budget"
-      case .familyFilter: "Family"
-      case .foodFilter: "Food"
-      case .showSheet: "Plan Summary"
-      case .checkout: "Checkout"
-      case .pastTrips: "Past Trips"
-      }
-    }
-
-    var text: LocalizedStringKey {
-      switch self {
-      case .profile:
-"""
-Here the user quickly gets to their profile and account settings.
-"""
-      case .travelPlanner:
-"""
-This is a test. \
-This is a test. \
-This is a test.
-This is a test.
-"""
-      case .filters:
-"""
-This block manages filters.
-It's usually the second step in onboarding.
-"""
-      case .budgetFilter:
-"""
-Apply the 'Budget' smart filter.
-"""
-      case .familyFilter:
-"""
-Apply the 'Family' smart filter. Do some special processing when activated.
-"""
-      case .foodFilter:
-"""
-Apply the 'Food' smart filter. Nothing special.
-"""
-      case .showSheet:
-"""
-Show the plan summary.
-"""
-      case .checkout:
-"""
-The button completes the scenario. The final step may lead to payment or confirmation.
-"""
-      case .pastTrips:
-"""
-List of previous trips that have been taken.
-"""
-      }
-    }
-  }
-
-  @State private var selection: Step?
-  @State private var showSheet: Bool = false
-
-  var body: some View {
-    NavigationStack {
-      ScrollView {
-        VStack(spacing: 24) {
-          VStack(alignment: .leading, spacing: 12) {
-            Text("Travel Planner")
-              .font(.largeTitle.bold())
-
-            Text("Build a trip, fine-tune filters, and finish booking in a couple of taps.")
-              .foregroundStyle(.secondary)
-
-            HStack(spacing: 12) {
-              statCard(title: "12", subtitle: "Routes")
-              statCard(title: "5", subtitle: "Cities")
-              statCard(title: "3", subtitle: "Days")
-            }
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-
-          filterPanel
-            .helpInfoViewTag(.filters)
-
-          Button("Show Sheet") { showSheet.toggle() }
-            .helpInfoViewTag(.showSheet)
-        }
-        .helpInfoViewTag(.travelPlanner)
-        .padding(24)
-        pastTravel
-          .helpInfoViewTag(.pastTrips)
-          .padding(24)
-      }
-      // .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .automatic) {
-          profileButton
-            .helpInfoViewTag(.profile)
-        }
-        ToolbarItem(placement: .automatic) {
-          Button {
-            selection = .profile
-          } label: {
-            Image(systemName: "questionmark.circle")
-          }
-        }
-      }
-      .safeAreaInset(edge: .bottom) {
-        checkoutButton
-          .helpInfoViewTag(.checkout)
-          .padding()
-      }
-    }
-    .sheet(isPresented: $showSheet, onDismiss: {
-      self.selection = nil
-    }, content: {
-      SheetSpotlightDemo()
-    })
-    .preferredColorScheme(colorScheme)
-    .helpInfoSpotlightOverlay(
-      selection: $selection,
-      orderedIDs: Step.allCases,
-      windowedMode: .useCustomWindow,
-      overlay: helpInfoOverlay
-    )
-  }
-
-  private var profileButton: some View {
-    Button {
-    } label: {
-      Image(systemName: "person.crop.circle.fill")
-    }
-  }
-
-  private var filterPanel: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      Text("Smart Filters")
-        .font(.headline)
-
-      HStack(spacing: 10) {
-        chip("Budget")
-          .helpInfoViewTag(.budgetFilter)
-        chip("Family")
-          .helpInfoViewTag(.familyFilter)
-        chip("Food")
-          .helpInfoViewTag(.foodFilter)
-      }
-
-      HStack(spacing: 14) {
-        filterMetric(title: "Price", value: "$420")
-        filterMetric(title: "Rating", value: "4.8")
-        filterMetric(title: "Transit", value: "18 min")
-      }
-    }
-    .padding(20)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.tertiary, in: .rect(cornerRadius: 28))
-  }
-
-  private var pastTravel: some View {
-    let columns = [
-      GridItem(alignment: .leading),
-      GridItem(alignment: .leading),
-      GridItem(.fixed(40), alignment: .leading),
-    ]
-
-    return VStack(alignment: .leading, spacing: 14) {
-      Text("Past Travel")
-        .font(.headline)
-
-      LazyVGrid(columns: columns) {
-        Section {
-          GridRow {
-            Text("Isle of Man")
-            Text("$123")
-            Text("1.3")
-          }
-          GridRow {
-            Text("Bermuda")
-            Text("$12,383")
-            Text("5.0")
-          }
-          GridRow {
-            Text("Saturn")
-            Text("$98,334,341")
-            Text("9.0")
-          }
-          GridRow {
-            Text("Fargo")
-            Text("$824")
-            Text("3.2")
-          }
-          GridRow {
-            Text("Mar-a-Lago")
-            Text("$33,234")
-            Text("0.0")
-          }
-        } header: {
-          LazyVGrid(columns: columns, spacing: 0) {
-            Text("Name")
-            Text("Price")
-            Text("Rating")
-          }
-        }
-        .font(.footnote)
-      }
-    }
-    .padding(20)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.tertiary, in: .rect(cornerRadius: 28))
-  }
-
-  private var checkoutButton: some View {
-    Button {
-      selection = .checkout
-    } label: {
-      HStack {
-        Text("Continue")
-        Spacer()
-        Image(systemName: "arrow.right")
-      }
-      .font(.headline)
-      .foregroundStyle(.white)
-      .padding(.horizontal, 22)
-      .padding(.vertical, 20)
-      .frame(maxWidth: .infinity)
-      .background(
-        LinearGradient(
-          colors: [.indigo, .cyan],
-          startPoint: .leading,
-          endPoint: .trailing
-        ),
-        in: .rect(cornerRadius: 24)
-      )
-    }
-    .buttonStyle(.plain)
-  }
-
-  private func statCard(
-    title: String,
-    subtitle: String
-  ) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text(title)
-        .font(.title3.bold())
-        .foregroundStyle(.orange)
-      Text(subtitle)
-    }
-    .padding()
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.secondary.opacity(0.3), in: .rect(cornerRadius: 12))
-  }
-
-  private func chip(_ title: String) -> some View {
-    Text(title)
-      .font(.subheadline.weight(.semibold))
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-      .background(.blue.opacity(0.30), in: Capsule())
-  }
-
-  private func filterMetric(
-    title: String,
-    value: String
-  ) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text(title)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-      Text(value)
-        .font(.headline)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-}
-
-struct SheetSpotlightDemo: View {
-  @Environment(\.colorScheme) var colorScheme
-
-  enum Step: CaseIterable, HelpInfoProvider {
-    case title
-    case action
-
-    var title: LocalizedStringKey {
-      switch self {
-      case .title: "Sheet Header"
-      case .action: "Primary Action"
-      }
-    }
-
-    var text: LocalizedStringKey {
-      switch self {
-      case .title: "This title explains the purpose of the modal flow."
-      case .action: "This button confirms the choice and closes the scenario."
-      }
-    }
-  }
-
-  @Environment(\.dismiss) private var dismiss
-  @State private var selection: Step?
-
-  var body: some View {
-    Form {
-      VStack(alignment: .leading, spacing: 24) {
-        VStack(alignment: .leading, spacing: 12) {
-          Text("Plan Summary")
-            .font(.title2.bold())
-            .helpInfoViewTag(.title)
-
-          Text("Review the details in the sheet before confirming the selection.")
-            .foregroundStyle(.secondary)
-
-          Button("Start tutorial") {
-            selection = .title
-          }
-        }
-
-        VStack(spacing: 14) {
-          summaryRow(title: "Destination", value: "Lisbon")
-          summaryRow(title: "Dates", value: "May 12 - May 16")
-          summaryRow(title: "Guests", value: "2 adults")
-        }
-        .padding(18)
-
-        Button {
-          dismiss()
-        } label: {
-          Text("Confirm")
-            .font(.headline)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(.blue.gradient, in: .rect(cornerRadius: 18))
-        }
-        .helpInfoViewTag(.action)
-      }
-      .buttonStyle(.plain)
-    }
-    .background(.background)
-    .helpInfoSpotlightOverlay(selection: $selection, orderedIDs: [Step.title, .action], overlay: helpInfoOverlay)
-    .presentationDetents([.medium, .large])
-  }
-
-  private func summaryRow(title: String, value: String) -> some View {
-    HStack {
-      Text(title)
-        .foregroundStyle(.secondary)
-      Spacer()
-      Text(value)
-        .fontWeight(.semibold)
-    }
-  }
-}
-
-// Extensions to support auto-completion of `Step` enum values.
-extension View {
-  fileprivate func helpInfoViewTag(_ id: TutorialSpotlightDemo.Step) -> some View {
-    helpInfoViewTag(id: id)
-  }
-  fileprivate func helpInfoViewTag(_ id: SheetSpotlightDemo.Step) -> some View {
-    helpInfoViewTag(id: id)
-  }
-}
 
 #Preview {
 
