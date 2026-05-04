@@ -33,7 +33,8 @@ extension View {
    - parameter dimmingOpacity: the amount of dimming applied to the whole app except the area being spotlit.
    - parameter scrollToItem: attempt to make the item so spotlite visible by scrolling to it. Enabled by default, but it can be
    disabled if causing issues.
-   - parameter windowedMode: if `useCustomWindow` manage overlays in a new `UIWindow` shown during help spotlighting.
+   - parameter windowedMode: if `useCustomWindow` manage overlays in a new `UIWindow` shown during help spotlighting. This is now
+   the default as it offers better rendering results.
    - parameter overlay: view builder that constructs the info panel to show with the help text.
    */
   public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
@@ -45,7 +46,7 @@ extension View {
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.8,
     scrollToItem: Bool = true,
-    windowedMode: WindowedMode = .none,
+    windowedMode: WindowedMode = .useCustomWindow,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
     modifier(
