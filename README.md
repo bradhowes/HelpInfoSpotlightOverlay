@@ -131,9 +131,8 @@ own. (the demo page shown above is largely from his source with some adjustments
 ## Alternatives
 
 Besides the [TutorialSpotlight][ts] mentioned above, another nice alternative is [Beacon][beacon]. It offers a way to actually drive
-a guided tour of your app's features without too much effort. It also works nicely with sheets, unlike my code. I even looked into 
-adopting how it manages a top-level UI window, but the integration never felt right. Definitely give [Beacon][beacon] a shot for a
-robust solution.
+a guided tour of your app's features without too much effort. I studied how it creates and manages a top-level UI window, and I 
+implemented something similar.
 
 [spi]: https://swiftpackageindex.com/bradhowes/HelpInfoSpotlightOverlay
 [spiv]: https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fbradhowes%2FHelpInfoSpotlightOverlay%2Fbadge%3Ftype%3Dswift-versions
