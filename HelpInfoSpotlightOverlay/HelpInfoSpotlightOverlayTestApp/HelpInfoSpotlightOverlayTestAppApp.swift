@@ -28,8 +28,7 @@ struct HelpInfoSpotlightOverlayTestAppApp: App {
 
   var body: some Scene {
     WindowGroup {
-      ContentView(helpInfo: $helpInfo)
-        .helpInfoSpotlightOverlay(selection: $helpInfo, orderedIDs: HelpInfo.allCases, overlay: helpInfoOverlay)
+      ContentView()
     }
   }
 }

@@ -44,12 +44,17 @@ extension View {
     cornerRadius: CGFloat = 28,
     animationDuration: TimeInterval = 0.6,
     blurRadius: CGFloat = 6.0,
-    dimmingOpacity: CGFloat = 0.8,
+    dimmingOpacity: CGFloat = 0.7,
     scrollToItem: Bool = true,
     windowedMode: WindowedMode = .useCustomWindow,
     @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-    modifier(
+#if os(iOS)
+    let windowManager: WindowManager<ID, Overlay>? = windowedMode == .useCustomWindow ? .init() : nil
+#else
+    let windowManager: WindowManager<ID, Overlay>? = nil
+#endif
+    return modifier(
       HelpInfoSpotlightOverlayModifier(
         selection: selection,
         config: .init(
@@ -63,7 +68,7 @@ extension View {
           windowedMode: windowedMode,
           helpInfoGenerator: overlay
         ),
-        windowManager: windowedMode == .useCustomWindow ? .init() : nil
+        windowManager: windowManager
       )
     )
   }

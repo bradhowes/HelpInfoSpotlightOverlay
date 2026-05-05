@@ -1,4 +1,7 @@
 import SwiftUI
+
+#if os(iOS)
+
 import UIKit
 
 /**
@@ -162,3 +165,20 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 }
 
 #endif // DEBUG
+
+#else
+
+@MainActor
+final class WindowManager<ID: Hashable, Overlay: View> {
+  init() {}
+
+  func show(
+    selection: Binding<ID?>,
+    config: Config<ID, Overlay>,
+    anchors: [ID: Anchor<CGRect>],
+    scrollViewProxy: ScrollViewProxy?,
+    animationNamespace: Namespace.ID
+  ) {}
+}
+
+#endif // os(iOS)

@@ -5,7 +5,7 @@ import SwiftUI
 /**
  Originally based on Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
  */
-struct TutorialSpotlightDemo: View {
+public struct TutorialSpotlightDemo: View {
   @Environment(\.colorScheme) var colorScheme
 
   enum Step: CaseIterable, HelpInfoProvider {
@@ -82,7 +82,9 @@ List of previous trips that have been taken.
   @State private var selection: Step?
   @State private var showSheet: Bool = false
 
-  var body: some View {
+  public init() {}
+
+  public var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 24) {
