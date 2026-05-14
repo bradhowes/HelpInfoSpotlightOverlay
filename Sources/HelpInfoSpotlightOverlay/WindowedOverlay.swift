@@ -13,12 +13,15 @@ import UIKit
  The window is torn down in the `hide` routine, which is triggered by a dismiss action.
  */
 @MainActor
+@Observable
 final class WindowManager<ID: Hashable, Overlay: View> {
   private var hostWindow: UIWindow?
   private var hostingController: UIHostingController<WindowedOverlay<ID, Overlay>>?
   private var windowedOverlayState: WindowedOverlayState<ID> = .init()
 
-  init() {}
+  init() {
+    TRACE("WindowManager.init")
+  }
 
   /**
    Create/update window and its overlay view.
@@ -43,10 +46,12 @@ final class WindowManager<ID: Hashable, Overlay: View> {
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
     else {
-      windowedOverlayState.anchors = anchors
+      TRACE("WindowManager.show - updating anchors")
+      self.windowedOverlayState.anchors = anchors
       return
     }
 
+    TRACE("WindowManager.show - creating window")
     let window = UIWindow(windowScene: scene)
     window.backgroundColor = .clear
     window.windowLevel = .alert + 1  // Above sheets, alerts, etc.
@@ -55,7 +60,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     let overlayView = WindowedOverlay<ID, Overlay>(
       selection: selection,
       config: config,
-      windowedOverlayState: windowedOverlayState,
+      windowedOverlayState: self.windowedOverlayState,
       dismissAction: { [weak self] in
         // Animate the disappearance of the spotlight overlay.
         withAnimation(.smooth(duration: config.animationDuration)) {
@@ -81,6 +86,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
    */
   private func hide(after duration: Duration) {
+    TRACE("WindowManager - hide")
     Task { [weak self] in
       try? await Task.sleep(for: duration)
       if let self {
@@ -118,7 +124,7 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   @Environment(\.colorScheme) var colorScheme
 
   var body: some View {
-    if let selected = selection, let anchor = windowedOverlayState.anchors[selected] {
+    if let selected = selection, let anchor = self.windowedOverlayState.anchors[selected] {
       // Important to use our own `GeometryReader` and not the one injected by ``HelpInfoSpotlightOverlayModifier`` since the
       // container bounds are probably different.
       GeometryReader { geometryProxy in
@@ -126,7 +132,7 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
           selection: $selection,
           animationNamespace: animationNamespace,
           config: config,
-          anchors: windowedOverlayState.anchors,
+          anchors: self.windowedOverlayState.anchors,
           geometryProxy: geometryProxy,
           scrollViewProxy: scrollViewProxy,
           selected: selected,

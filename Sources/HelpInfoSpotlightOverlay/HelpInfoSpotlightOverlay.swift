@@ -42,7 +42,7 @@ extension View {
     orderedIDs: [ID],
     spotlightPadding: CGFloat = 8,
     cornerRadius: CGFloat = 28,
-    animationDuration: TimeInterval = 0.6,
+    animationDuration: TimeInterval = 0.65,
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.7,
     scrollToItem: Bool = true,
@@ -54,6 +54,7 @@ extension View {
 #else
     let windowManager: WindowManager<ID, Overlay>? = nil
 #endif
+    TRACE("helpInfoSpotlightOverlay modifier")
     return modifier(
       HelpInfoSpotlightOverlayModifier(
         selection: selection,
@@ -94,7 +95,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
 
   @Binding var selection: ID?
   let config: Config<ID, Overlay>
-  let windowManager: WindowManager<ID, Overlay>?
+  @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
   @Environment(\.colorScheme) private var colorScheme
 
@@ -144,7 +145,9 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
     if let selected = selection, let anchor = anchors[selected] {
+      let _ = TRACE("spotlightOverlayContent - selected: \(selected) anchor: \(anchor)")
       if let windowManager {
+        let _ = TRACE("spotlightOverlayContent - using windowManager")
 
         // When using a top-level window to host the spotlight overlay, we need to create and show the window and its overlay view.
         // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
@@ -160,6 +163,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
       } else {
         // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
         // compared to windowed mode.
+        let _ = TRACE("spotlightOverlayContent - not using windowManager")
         SpotlightOverlay(
           selection: $selection,
           animationNamespace: animationNamespace,
@@ -217,15 +221,11 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
   var body: some View {
     ZStack(alignment: .topLeading) {
+      let _ = TRACE("SpotlightOverlay.body")
 
       // The mask that dims everything on the screen but the item being focused on.
-      SpotlightMask(
-        config: config,
-        selection: selected,
-        focusArea: spotlightFrame,
-        animationNamespace: animationNamespace,
-        dismissAction: actions.dismiss
-      ).zIndex(1)
+      spotlightMask
+        .zIndex(1)
 
       // The information card that shows the help info for the item being focused on.
       config.helpInfoGenerator(selected, actions)
@@ -234,7 +234,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
         } action: { panelSize in
-          self.position = helpInfoPosition(for: spotlightFrame, panelSize: panelSize, in: containerBounds)
+          self.position = helpInfoPosition(panelSize: panelSize)
         }
         .frame(maxWidth: containerBounds.width - config.horizontalPadding * 2)
         .position(
@@ -271,53 +271,42 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
    Determine a reasonable location for the help info panel which does not obscure the spotlit item and keeps the info panel
    fully on the app display.
 
-   - parameter focusFrame: the frame of the item being spotlit.
    - parameter panelSize: the area of the screen to use for positioning
-   - parameter container: the bounds of the view to constrain the placement of the help info view
    - returns: the location to use for the panel
    */
-  private func helpInfoPosition(for focusFrame: CGRect, panelSize: CGSize, in container: CGRect) -> CGPoint {
+  private func helpInfoPosition(panelSize: CGSize) -> CGPoint {
     let panelWidth2 = panelSize.width / 2
     let panelHeight2 = panelSize.height / 2
 
     let centeredX = min(
-      max(focusFrame.midX, container.minX + config.horizontalPadding + panelWidth2),
-      container.maxX - config.horizontalPadding - panelWidth2
+      max(spotlightFrame.midX, containerBounds.minX + config.horizontalPadding + panelWidth2),
+      containerBounds.maxX - config.horizontalPadding - panelWidth2
     )
 
-    let preferredBelowY = focusFrame.maxY + config.verticalSeparation + panelHeight2
+    let preferredBelowY = spotlightFrame.maxY + config.verticalSeparation + panelHeight2
     let position: CGPoint
 
-    if preferredBelowY + panelHeight2 <= container.maxY - config.verticalPadding {
+    if preferredBelowY + panelHeight2 <= containerBounds.maxY - config.verticalPadding {
       position = .init(x: centeredX, y: preferredBelowY)
     } else {
-      let preferredAboveY = focusFrame.minY - config.verticalSeparation - panelHeight2
+      let preferredAboveY = spotlightFrame.minY - config.verticalSeparation - panelHeight2
       let clampedY = min(
-        max(preferredAboveY, container.minY + config.verticalPadding + panelHeight2),
-        container.maxY - config.verticalPadding - panelHeight2
+        max(preferredAboveY, containerBounds.minY + config.verticalPadding + panelHeight2),
+        containerBounds.maxY - config.verticalPadding - panelHeight2
       )
       position = .init(x: centeredX, y: clampedY)
     }
 
+    TRACE("SpotlightOverlay.helpInfoPosition - position: \(position)")
     return position
   }
-}
 
-/**
- Create a composite full-screen image that dims everything but the indicated region. Uses `matchedGeometryEffect` so that the
- spotlight animates from one region to the next. Tapping anywhere in the mask will dismiss the spotlight.
- */
-struct SpotlightMask<ID: Hashable, Overlay: View>: View {
-  let config: Config<ID, Overlay>
-  let selection: ID?
-  let focusArea: CGRect
-  let animationNamespace: Namespace.ID
-  let dismissAction: () -> Void
-
-  @Environment(\.colorScheme) private var colorScheme
-
-  var body: some View {
-    ZStack {
+  /**
+   Create the masking layer that dims the main view except for the region under the spotlight.
+   */
+  private var spotlightMask: some View {
+    TRACE("SpotlightOverlay.spotlightOverlayMask")
+    return ZStack {
 
       // The mask that dims everything on the screen.
       spotlightBackingColor
@@ -326,18 +315,18 @@ struct SpotlightMask<ID: Hashable, Overlay: View>: View {
 
       // The region that shows the item to spotlight.
       RoundedRectangle(cornerRadius: config.cornerRadius)
-        .frame(width: focusArea.width, height: focusArea.height)
-        .position(x: focusArea.midX, y: focusArea.midY)
+        .frame(width: spotlightFrame.width, height: spotlightFrame.height)
+        .position(x: spotlightFrame.midX, y: spotlightFrame.midY)
         .matchedGeometryEffect(id: selection, in: animationNamespace, properties: .frame, anchor: .center, isSource: false)
         .blur(radius: config.blurRadius)
         .blendMode(.destinationOut)
         .zIndex(4)
     }
+    .compositingGroup()
     .contentShape(Rectangle())
     .onTapGesture {
       dismissAction()
     }
-    .compositingGroup()
   }
 
   private var spotlightBackingColor: Color {
@@ -426,6 +415,12 @@ extension View {
   fileprivate func helpInfoSpotlightAnimationNamespace(_ value: Namespace.ID) -> some View {
     environment(\.helpInfoSpotlightAnimationNamespace, value)
   }
+}
+
+func TRACE(_ msg: String) {
+#if enableTrace
+  print(msg)
+#endif
 }
 
 #if DEBUG
