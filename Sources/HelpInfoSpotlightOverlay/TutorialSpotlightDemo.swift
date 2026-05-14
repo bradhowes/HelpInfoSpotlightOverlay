@@ -85,6 +85,7 @@ List of previous trips that have been taken.
   public init() {}
 
   public var body: some View {
+
     NavigationStack {
       ScrollView {
         VStack(spacing: 24) {

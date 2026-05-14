@@ -6,7 +6,7 @@ import SwiftUI
 struct ContentView: View {
   var body: some View {
     TutorialSpotlightDemo()
-      .frame(minWidth: 1000, minHeight: 600)
+      // .frame(minWidth: 1000, minHeight: 600)
   }
 }
 

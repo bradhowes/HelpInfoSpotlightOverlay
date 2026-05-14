@@ -333,11 +333,11 @@ struct SpotlightMask<ID: Hashable, Overlay: View>: View {
         .blendMode(.destinationOut)
         .zIndex(4)
     }
-    .compositingGroup()
-    .contentShape(.rect)
+    .contentShape(Rectangle())
     .onTapGesture {
       dismissAction()
     }
+    .compositingGroup()
   }
 
   private var spotlightBackingColor: Color {
