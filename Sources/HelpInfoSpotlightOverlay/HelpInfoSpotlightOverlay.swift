@@ -54,7 +54,6 @@ extension View {
 #else
     let windowManager: WindowManager<ID, Overlay>? = nil
 #endif
-    TRACE("helpInfoSpotlightOverlay modifier")
     return modifier(
       HelpInfoSpotlightOverlayModifier(
         selection: selection,
@@ -145,9 +144,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
     if let selected = selection, let anchor = anchors[selected] {
-      let _ = TRACE("spotlightOverlayContent - selected: \(selected) anchor: \(anchor)")
       if let windowManager {
-        let _ = TRACE("spotlightOverlayContent - using windowManager")
 
         // When using a top-level window to host the spotlight overlay, we need to create and show the window and its overlay view.
         // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
@@ -163,7 +160,6 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
       } else {
         // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
         // compared to windowed mode.
-        let _ = TRACE("spotlightOverlayContent - not using windowManager")
         SpotlightOverlay(
           selection: $selection,
           animationNamespace: animationNamespace,
@@ -221,8 +217,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
   var body: some View {
     ZStack(alignment: .topLeading) {
-      let _ = TRACE("SpotlightOverlay.body")
-
       // The mask that dims everything on the screen but the item being focused on.
       spotlightMask
         .zIndex(1)
@@ -297,7 +291,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
       position = .init(x: centeredX, y: clampedY)
     }
 
-    TRACE("SpotlightOverlay.helpInfoPosition - position: \(position)")
     return position
   }
 
@@ -305,8 +298,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
    Create the masking layer that dims the main view except for the region under the spotlight.
    */
   private var spotlightMask: some View {
-    TRACE("SpotlightOverlay.spotlightOverlayMask")
-    return ZStack {
+    ZStack {
 
       // The mask that dims everything on the screen.
       spotlightBackingColor
@@ -415,12 +407,6 @@ extension View {
   fileprivate func helpInfoSpotlightAnimationNamespace(_ value: Namespace.ID) -> some View {
     environment(\.helpInfoSpotlightAnimationNamespace, value)
   }
-}
-
-func TRACE(_ msg: String) {
-#if enableTrace
-  print(msg)
-#endif
 }
 
 #if DEBUG

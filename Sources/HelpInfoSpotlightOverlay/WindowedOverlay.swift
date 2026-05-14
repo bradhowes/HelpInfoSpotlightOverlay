@@ -19,9 +19,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
   private var hostingController: UIHostingController<WindowedOverlay<ID, Overlay>>?
   private var windowedOverlayState: WindowedOverlayState<ID> = .init()
 
-  init() {
-    TRACE("WindowManager.init")
-  }
+  init() {}
 
   /**
    Create/update window and its overlay view.
@@ -46,12 +44,10 @@ final class WindowManager<ID: Hashable, Overlay: View> {
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
     else {
-      TRACE("WindowManager.show - updating anchors")
       self.windowedOverlayState.anchors = anchors
       return
     }
 
-    TRACE("WindowManager.show - creating window")
     let window = UIWindow(windowScene: scene)
     window.backgroundColor = .clear
     window.windowLevel = .alert + 1  // Above sheets, alerts, etc.
@@ -86,7 +82,6 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
    */
   private func hide(after duration: Duration) {
-    TRACE("WindowManager - hide")
     Task { [weak self] in
       try? await Task.sleep(for: duration)
       if let self {
