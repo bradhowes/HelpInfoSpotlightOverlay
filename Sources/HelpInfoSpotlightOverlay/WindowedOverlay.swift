@@ -82,9 +82,12 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
    */
   private func hide(after duration: Duration) {
+    print("WindowManager.hide - BEGIN")
     Task { [weak self] in
       try? await Task.sleep(for: duration)
+      print("WindowManager.hide - after sleep")
       if let self {
+        print("WindowManager.hide - disposing of hostWindow")
         self.hostWindow?.isHidden = true
         self.hostWindow?.rootViewController = nil
         self.hostWindow = nil
@@ -103,7 +106,7 @@ class WindowedOverlayState<ID: Hashable> {
 }
 
 /**
- The main view of the window that shows the spotlight overlay.
+ The main view of the custom UIWindow that shows the spotlight overlay.
  */
 struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value

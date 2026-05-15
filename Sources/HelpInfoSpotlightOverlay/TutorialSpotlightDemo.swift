@@ -144,7 +144,6 @@ List of previous trips that have been taken.
     .helpInfoSpotlightOverlay(
       selection: $selection,
       orderedIDs: Step.allCases,
-      windowedMode: .useCustomWindow,
       overlay: helpInfoOverlay
     )
   }
