@@ -354,19 +354,18 @@ private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
   @Environment(\.helpInfoSpotlightAnimationNamespace) private var namespace
 
   func body(content: Content) -> some View {
+    let _ = print("HelpInfoViewTagModifier \(id)")
     if let namespace = namespace {
       content
         .matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center, isSource: true)
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
-        .id(id)
     } else {
       content
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
-        .id(id)
     }
   }
 }
