@@ -2,78 +2,28 @@
 
 import SwiftUI
 
-public struct ViewConfig {
-  public var spotlightPadding: CGFloat
-  public var cornerRadius: CGFloat
-  public var blurRadius: CGFloat
-  public var dimmingOpacity: CGFloat
-  /// Padding applied to the leading and trailing edges of help info overlay view to separate from the containing view edges.
-  public var horizontalPadding: CGFloat
-  /// Padding applied to the top and bottom edges of help info overlay view to separate from the containing view edges.
-  public var verticalPadding: CGFloat
-  /// Desired separation between the spotlit view rectangle and the help info overlay view.
-  public var verticalSeparation: CGFloat
-  public var animationDuration: TimeInterval
-  public var scrollToItem: Bool
-  public var windowedMode: WindowedMode
-
-  public init(
-    spotlightPadding: CGFloat = 8.0,
-    cornerRadius: CGFloat = 28.0,
-    blurRadius: CGFloat = 6.0,
-    dimmingOpacity: CGFloat = 0.7,
-    horizontalPadding: CGFloat = 16.0,
-    verticalPadding: CGFloat = 24.0,
-    verticalSeparation: CGFloat = 24.0,
-    animationDuration: TimeInterval = 0.65,
-    scrollToItem: Bool = true,
-    windowedMode: WindowedMode = .useCustomWindow,
-  ) {
-    self.spotlightPadding = spotlightPadding
-    self.cornerRadius = cornerRadius
-    self.blurRadius = blurRadius
-    self.dimmingOpacity = dimmingOpacity
-    self.horizontalPadding = horizontalPadding
-    self.verticalPadding = verticalPadding
-    self.verticalSeparation = verticalSeparation
-    self.animationDuration = animationDuration
-    self.scrollToItem = scrollToItem
-    self.windowedMode = windowedMode
-  }
-}
-
 /**
  Container of configuration items and methods to walk collection of help item IDs.
  */
-public struct Config<ID: Hashable, Overlay: View> {
+public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
   typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
-  public var orderedIDs: [ID]
-  public let viewConfig: ViewConfig
-
-  /**
-   Determine a reasonable location for the help info panel which does not obscure the spotlit item and keeps the info panel
-   fully on the app display.
-
-   - parameter panelSize: the area of the screen to use for positioning
-   - returns: the location to use for the panel
-   */
-  public typealias Placer = (_ panelSize: CGSize, _ spotlightFrame: CGRect, _ containerBounds: CGRect, _ viewConfig: ViewConfig) -> CGPoint
-
-  public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ ViewConfig: ViewConfig) -> CGRect
-
+  public typealias Placer = (_ panelSize: CGSize, _ spotlightFrame: CGRect, _ containerBounds: CGRect, _ config: Self) -> CGPoint
+  public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ config: Self) -> CGRect
   public typealias Generator = (ID, HelpInfoSpotlightOverlayActions) -> Overlay
 
+  public var orderedIDs: [ID]
+  public var viewConfig: HelpInfoOverlayViewConfig
+  public var generator: Generator
   public var placer: Placer?
   public var framer: Framer?
-  public var generator: Generator?
 
   public init(
     orderedIDs: [ID] = [],
-    viewConfig: ViewConfig? = nil,
+    viewConfig: HelpInfoOverlayViewConfig? = nil,
+    generator: @escaping Generator,
     placer: Placer? = nil,
-    framer: Framer? = nil,
-    generator: Generator? = nil
+    framer: Framer? = nil
   ) {
     self.orderedIDs = orderedIDs
     self.viewConfig = viewConfig ?? .init()
@@ -123,15 +73,25 @@ public struct Config<ID: Hashable, Overlay: View> {
   }
 
   @MainActor
-  func place(
-    panelSize: CGSize,
-    spotlightFrame: CGRect,
-    containerBounds: CGRect,
-  ) -> CGPoint {
-    if let placer {
-      return placer(panelSize, spotlightFrame, containerBounds, viewConfig)
-    }
+  var windowManager: WindowManager<ID, Overlay>? {
+#if os(iOS)
+    let windowManager: WindowManager<ID, Overlay>? = viewConfig.windowedMode == .useCustomWindow ? .init() : nil
+#else
+    let windowManager: WindowManager<ID, Overlay>? = nil
+#endif
+    return windowManager
+  }
 
+  /**
+   Calculate where to place the help info overlay panel. Preference is to put above or below the spotlight item frame. This is the
+   default behavior when there is not a custom `placer` method.
+
+   - parameter panelSize: the dimensions of the overlay panel
+   - parameter spotlightFrame: the location and size of the spotlight region
+   - parameter containerBounds: the screen bounds available for placing the overlay panel
+   - returns: the calculated location to use
+   */
+  public func calculatePanelPosition(panelSize: CGSize, spotlightFrame: CGRect, containerBounds: CGRect) -> CGPoint {
     let panelWidth2 = panelSize.width / 2
     let panelHeight2 = panelSize.height / 2
 
@@ -157,27 +117,36 @@ public struct Config<ID: Hashable, Overlay: View> {
     return position
   }
 
-  func frame(id: ID, anchor: Anchor<CGRect>, proxy: GeometryProxy, viewConfig: ViewConfig) -> CGRect {
-    if let framer {
-      return framer(id, anchor, proxy, viewConfig)
-    }
+  /**
+   Calculate the frame to use for the time in the spotlight. This is the default behavior when there is not a custom `framer`
+   methoed.
 
-    return proxy[anchor]
+   - parameter anchor: the anchor of the item in the spotlight.
+   - parameter proxy: the proxy to use to obtain geometric values from the anchor
+   - returns: the calculate frame to use
+   */
+  public func calculateItemFrame(anchor: Anchor<CGRect>, proxy: GeometryProxy) -> CGRect {
+    proxy[anchor]
       .insetBy(dx: -viewConfig.spotlightPadding, dy: -viewConfig.spotlightPadding)
       .offsetBy(dx: proxy.safeAreaInsets.leading, dy: proxy.safeAreaInsets.top)
   }
 
-  func generate(id: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
-    Group {
-      if let generator {
-        generator(id, actions)
-      } else {
-        Text("Missing")
-      }
+  func place(panelSize: CGSize, spotlightFrame: CGRect, containerBounds: CGRect) -> CGPoint {
+    if let placer {
+      return placer(panelSize, spotlightFrame, containerBounds, self)
     }
+    return calculatePanelPosition(panelSize: panelSize, spotlightFrame: spotlightFrame, containerBounds: containerBounds)
   }
 
-  func helpInfoOverlay(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View where ID: HelpInfoProvider {
+  func frame(id: ID, anchor: Anchor<CGRect>, proxy: GeometryProxy) -> CGRect {
+    if let framer {
+      return framer(id, anchor, proxy, self)
+    }
+
+    return calculateItemFrame(anchor: anchor, proxy: proxy)
+  }
+
+  static func helpInfoOverlay(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View where ID: HelpInfoProvider {
     VStack(spacing: 16) {
       HelpInfoLayout {
         Text(item.title)

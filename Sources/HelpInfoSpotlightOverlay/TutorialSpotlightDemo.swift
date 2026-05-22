@@ -144,7 +144,12 @@ List of previous trips that have been taken.
     .helpInfoSpotlightOverlay(
       selection: $selection,
       orderedIDs: Step.allCases,
-      overlay: helpInfoOverlay
+      generator: helpInfoOverlay,
+      framer: { _, anchor, proxy, config in
+        var frame = config.calculateItemFrame(anchor: anchor, proxy: proxy)
+        frame.size.height = min(frame.size.height, 200.0)
+        return frame
+      }
     )
   }
 
@@ -362,9 +367,7 @@ struct SheetSpotlightDemo: View {
     .background(.background)
     .helpInfoSpotlightOverlay(
       selection: $selection,
-      orderedIDs: [Step.title, .action],
-      windowedMode: .useCustomWindow,
-      overlay: helpInfoOverlay
+      config: .init(orderedIDs: [Step.title, .action], generator: helpInfoOverlay)
     )
     .presentationDetents([.medium, .large])
   }

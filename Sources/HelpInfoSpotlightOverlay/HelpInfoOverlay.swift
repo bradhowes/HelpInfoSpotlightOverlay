@@ -104,8 +104,7 @@ struct DemoAppView: View {
     }
     .helpInfoSpotlightOverlay(
       selection: $selectedHelpInfoItem,
-      orderedIDs: HelpInfo.allCases,
-      overlay: helpInfoOverlay
+      config: .init(orderedIDs: HelpInfo.allCases, generator: helpInfoOverlay)
     )
   }
 }

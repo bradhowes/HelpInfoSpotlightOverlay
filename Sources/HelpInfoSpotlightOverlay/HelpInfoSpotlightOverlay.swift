@@ -12,6 +12,59 @@ public enum WindowedMode {
 extension View {
 
   /**
+   Install a help info overlay onto the current view.
+
+   - parameter selection: a binding to the state variable that controls which item is under the spotlight.
+   - parameter config: the configuration for the overlay view and operation.
+   - returns: the modified view
+   */
+  public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
+    selection: Binding<ID?>,
+    config: HelpInfoOverlayConfig<ID, Overlay>
+  ) -> some View {
+    modifier(
+      HelpInfoSpotlightOverlayModifier(
+        selection: selection,
+        config: config,
+        windowManager: config.windowManager
+      )
+    )
+  }
+
+  /**
+   Install a help info overlay onto the current view.
+
+   - parameter selection: a binding to the state variable that controls which item is under the spotlight.
+   - parameter orderedIDs: the collection of IDs that indicate the views to show help info for.
+   - parameter viewConfig: view configuration used when showing the help info.
+   - parameter generator: a view generator that shows the help info text and controls to change the view under the spotlight.
+   - parameter placer: optional function that determines where to put the help info overlay in relation to the item under the
+   spotlight. The default behavior is found in the `Config.place` method.
+   - parameter framer: optional function that generates the frame of the item under the spotlight. The default behavior is found
+   in the `Config.frame` method.
+   - returns: the modified view
+   */
+  public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
+    selection: Binding<ID?>,
+    orderedIDs: [ID] = [],
+    viewConfig: HelpInfoOverlayViewConfig = .init(),
+    generator: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay,
+    placer: HelpInfoOverlayConfig<ID, Overlay>.Placer? = nil,
+    framer: HelpInfoOverlayConfig<ID, Overlay>.Framer? = nil
+  ) -> some View where ID: HelpInfoProvider {
+    helpInfoSpotlightOverlay(
+      selection: selection,
+      config: .init(
+        orderedIDs: orderedIDs,
+        viewConfig: viewConfig,
+        generator: generator,
+        placer: placer,
+        framer: framer,
+      )
+    )
+  }
+
+  /**
    Adds a help item spotlight overlay to a view.
 
    The overlay appears when the given binding holds a non-nil value. The items that are highlighted must be tagged with the
@@ -48,53 +101,26 @@ extension View {
     dimmingOpacity: CGFloat = 0.7,
     scrollToItem: Bool = true,
     windowedMode: WindowedMode = .useCustomWindow,
-    @ViewBuilder overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
+    overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-#if os(iOS)
-    let windowManager: WindowManager<ID, Overlay>? = windowedMode == .useCustomWindow ? .init() : nil
-#else
-    let windowManager: WindowManager<ID, Overlay>? = nil
-#endif
-    return modifier(
-      HelpInfoSpotlightOverlayModifier(
-        selection: selection,
-        config: .init(
-          orderedIDs: orderedIDs,
-          viewConfig: .init(
-            spotlightPadding: spotlightPadding,
-            cornerRadius: cornerRadius,
-            blurRadius: blurRadius,
-            dimmingOpacity: dimmingOpacity,
-            animationDuration: animationDuration,
-            scrollToItem: scrollToItem,
-            windowedMode: windowedMode
-          ),
-          generator: overlay
-        ),
-        windowManager: windowManager
-      )
+    let config = HelpInfoOverlayConfig(
+      orderedIDs: orderedIDs,
+      viewConfig: .init(
+        spotlightPadding: spotlightPadding,
+        cornerRadius: cornerRadius,
+        blurRadius: blurRadius,
+        dimmingOpacity: dimmingOpacity,
+        animationDuration: animationDuration,
+        scrollToItem: scrollToItem,
+        windowedMode: windowedMode
+      ),
+      generator: overlay
     )
-  }
-
-  public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
-    selection: Binding<ID?>,
-    orderedIDs: [ID],
-    config: Config<ID, Overlay>? = nil
-  ) -> some View {
-    var config = config ?? .init(orderedIDs: orderedIDs)
-    if config.orderedIDs.isEmpty {
-      config.orderedIDs = orderedIDs
-    }
-#if os(iOS)
-    let windowManager: WindowManager<ID, Overlay>? = config.viewConfig.windowedMode == .useCustomWindow ? .init() : nil
-#else
-    let windowManager: WindowManager<ID, Overlay>? = nil
-#endif
     return modifier(
       HelpInfoSpotlightOverlayModifier(
         selection: selection,
         config: config,
-        windowManager: windowManager
+        windowManager: config.windowManager
       )
     )
   }
@@ -119,7 +145,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
-  let config: Config<ID, Overlay>
+  let config: HelpInfoOverlayConfig<ID, Overlay>
   @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
   @Environment(\.colorScheme) private var colorScheme
@@ -218,7 +244,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   @State var position: CGPoint = .zero
   let animationNamespace: Namespace.ID
 
-  let config: Config<ID, Overlay>
+  let config: HelpInfoOverlayConfig<ID, Overlay>
   let anchors: AnchorMap
   let geometryProxy: GeometryProxy
   let scrollViewProxy: ScrollViewProxy?
@@ -229,11 +255,8 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   @Environment(\.colorScheme) private var colorScheme
 
   var containerBounds: CGRect { geometryProxy.containerBounds }
-  var spotlightFrame: CGRect {
-    geometryProxy[anchor]
-      .insetBy(dx: -config.viewConfig.spotlightPadding, dy: -config.viewConfig.spotlightPadding)
-      .offsetBy(dx: geometryProxy.safeAreaInsets.leading, dy: geometryProxy.safeAreaInsets.top)
-  }
+  var spotlightFrame: CGRect { config.frame(id: selected, anchor: anchor, proxy: geometryProxy) }
+
   var actions: HelpInfoSpotlightOverlayActions {
     .init(
       dismiss: self.dismissAction,
@@ -249,17 +272,13 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .zIndex(1)
 
       // The information card that shows the help info for the item being focused on.
-      config.generate(id: selected, actions: actions)
+      config.generator(selected, actions)
         .preferredColorScheme(colorScheme)
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
         } action: { panelSize in
-          self.position = config.place(
-            panelSize: panelSize,
-            spotlightFrame: spotlightFrame,
-            containerBounds: containerBounds
-          )
+          self.position = config.place(panelSize: panelSize, spotlightFrame: spotlightFrame, containerBounds: containerBounds)
         }
         .frame(maxWidth: containerBounds.width - config.viewConfig.horizontalPadding * 2)
         .position(

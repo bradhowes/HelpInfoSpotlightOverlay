@@ -35,7 +35,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    */
   func show(
     selection: Binding<ID?>,
-    config: Config<ID, Overlay>,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
     animationNamespace: Namespace.ID
@@ -112,7 +112,7 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
-  let config: Config<ID, Overlay>
+  let config: HelpInfoOverlayConfig<ID, Overlay>
   @State var windowedOverlayState: WindowedOverlayState<ID>
   @State var isVisible = false
   let dismissAction: () -> Void
