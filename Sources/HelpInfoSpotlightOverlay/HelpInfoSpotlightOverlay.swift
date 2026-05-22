@@ -361,11 +361,13 @@ private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
+        .id(id)
     } else {
       content
         .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
+        .id(id)
     }
   }
 }
