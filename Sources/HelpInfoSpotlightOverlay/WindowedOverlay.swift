@@ -59,10 +59,10 @@ final class WindowManager<ID: Hashable, Overlay: View> {
       windowedOverlayState: self.windowedOverlayState,
       dismissAction: { [weak self] in
         // Animate the disappearance of the spotlight overlay.
-        withAnimation(.smooth(duration: config.animationDuration)) {
+        withAnimation(.smooth(duration: config.viewConfig.animationDuration)) {
           selection.wrappedValue = nil
         }
-        self?.hide(after: .seconds(config.animationDuration))
+        self?.hide(after: .seconds(config.viewConfig.animationDuration))
       },
       scrollViewProxy: scrollViewProxy,
       animationNamespace: animationNamespace
@@ -135,13 +135,13 @@ struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
           scrollViewProxy: scrollViewProxy,
           selected: selected,
           anchor: anchor,
-          dismissAction: dismissAction
+          dismissAction: dismissAction,
         )
       }
       // Animate the appearance of the spotlight overlay. The animation for the disappearance is handled in the `dismissAction`.
       .opacity(isVisible ? 1 : 0)
-      .animation(.smooth(duration: config.animationDuration), value: selection)
-      .animation(.smooth(duration: config.animationDuration), value: isVisible)
+      .animation(.smooth(duration: config.viewConfig.animationDuration), value: selection)
+      .animation(.smooth(duration: config.viewConfig.animationDuration), value: isVisible)
       .onAppear {
         isVisible = true
       }

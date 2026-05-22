@@ -3,6 +3,7 @@
 /**
  Collection of actions available in a help spotlight info panel overlay.
  */
+@MainActor
 public struct HelpInfoSpotlightOverlayActions {
   /// Closes the spotlight flow and removes the overlay.
   public let dismiss: () -> Void

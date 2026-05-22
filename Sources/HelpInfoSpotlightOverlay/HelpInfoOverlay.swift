@@ -19,7 +19,6 @@ import SwiftUI
  - parameter actions: the collection of actions for buttons in the overlay view
  - returns: overlay view
  */
-@MainActor
 public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
   @Environment(\.colorScheme) var colorScheme
   return VStack(spacing: 16) {

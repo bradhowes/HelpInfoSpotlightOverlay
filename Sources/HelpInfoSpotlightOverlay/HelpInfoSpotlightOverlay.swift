@@ -37,6 +37,7 @@ extension View {
    the default as it offers better rendering results.
    - parameter overlay: view builder that constructs the info panel to show with the help text.
    */
+  @available(*, deprecated, message: "Use method taking a Config parameter.")
   public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
     selection: Binding<ID?>,
     orderedIDs: [ID],
@@ -59,15 +60,40 @@ extension View {
         selection: selection,
         config: .init(
           orderedIDs: orderedIDs,
-          spotlightPadding: spotlightPadding,
-          cornerRadius: cornerRadius,
-          animationDuration: animationDuration,
-          blurRadius: blurRadius,
-          dimmingOpacity: dimmingOpacity,
-          scrollToItem: scrollToItem,
-          windowedMode: windowedMode,
-          helpInfoGenerator: overlay
+          viewConfig: .init(
+            spotlightPadding: spotlightPadding,
+            cornerRadius: cornerRadius,
+            blurRadius: blurRadius,
+            dimmingOpacity: dimmingOpacity,
+            animationDuration: animationDuration,
+            scrollToItem: scrollToItem,
+            windowedMode: windowedMode
+          ),
+          generator: overlay
         ),
+        windowManager: windowManager
+      )
+    )
+  }
+
+  public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
+    selection: Binding<ID?>,
+    orderedIDs: [ID],
+    config: Config<ID, Overlay>? = nil
+  ) -> some View {
+    var config = config ?? .init(orderedIDs: orderedIDs)
+    if config.orderedIDs.isEmpty {
+      config.orderedIDs = orderedIDs
+    }
+#if os(iOS)
+    let windowManager: WindowManager<ID, Overlay>? = config.viewConfig.windowedMode == .useCustomWindow ? .init() : nil
+#else
+    let windowManager: WindowManager<ID, Overlay>? = nil
+#endif
+    return modifier(
+      HelpInfoSpotlightOverlayModifier(
+        selection: selection,
+        config: config,
         windowManager: windowManager
       )
     )
@@ -99,7 +125,8 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
   @Environment(\.colorScheme) private var colorScheme
 
   func body(content: Content) -> some View {
-    if config.scrollToItem {
+    if config.viewConfig.scrollToItem {
+      let _ = print("scrollToItem true")
       ScrollViewReader { scrollViewProxy in
         contentModifier(content, scrollViewProxy: scrollViewProxy)
       }
@@ -124,7 +151,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
           spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
         }
       }
-      .animation(.smooth(duration: config.animationDuration), value: selection)
+      .animation(.smooth(duration: config.viewConfig.animationDuration), value: selection)
   }
   /**
    Create the spotlight view to hilight an item in the UI and show help text for it.
@@ -204,7 +231,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   var containerBounds: CGRect { geometryProxy.containerBounds }
   var spotlightFrame: CGRect {
     geometryProxy[anchor]
-      .insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
+      .insetBy(dx: -config.viewConfig.spotlightPadding, dy: -config.viewConfig.spotlightPadding)
       .offsetBy(dx: geometryProxy.safeAreaInsets.leading, dy: geometryProxy.safeAreaInsets.top)
   }
   var actions: HelpInfoSpotlightOverlayActions {
@@ -222,15 +249,19 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .zIndex(1)
 
       // The information card that shows the help info for the item being focused on.
-      config.helpInfoGenerator(selected, actions)
+      config.generate(id: selected, actions: actions)
         .preferredColorScheme(colorScheme)
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
         } action: { panelSize in
-          self.position = helpInfoPosition(panelSize: panelSize)
+          self.position = config.place(
+            panelSize: panelSize,
+            spotlightFrame: spotlightFrame,
+            containerBounds: containerBounds
+          )
         }
-        .frame(maxWidth: containerBounds.width - config.horizontalPadding * 2)
+        .frame(maxWidth: containerBounds.width - config.viewConfig.horizontalPadding * 2)
         .position(
           self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
         .clipped()
@@ -238,7 +269,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     }
     .frame(width: containerBounds.width, height: containerBounds.height)
     .offset(x: -geometryProxy.safeAreaInsets.leading, y: -geometryProxy.safeAreaInsets.top)
-    .animation(.smooth(duration: config.animationDuration), value: position)
+    .animation(.smooth(duration: config.viewConfig.animationDuration), value: position)
     .onChange(of: pending) {
       // Postpone the update just a tad so that the anchor location will be valid after scrolling.
       Task {
@@ -262,39 +293,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   }
 
   /**
-   Determine a reasonable location for the help info panel which does not obscure the spotlit item and keeps the info panel
-   fully on the app display.
-
-   - parameter panelSize: the area of the screen to use for positioning
-   - returns: the location to use for the panel
-   */
-  private func helpInfoPosition(panelSize: CGSize) -> CGPoint {
-    let panelWidth2 = panelSize.width / 2
-    let panelHeight2 = panelSize.height / 2
-
-    let centeredX = min(
-      max(spotlightFrame.midX, containerBounds.minX + config.horizontalPadding + panelWidth2),
-      containerBounds.maxX - config.horizontalPadding - panelWidth2
-    )
-
-    let preferredBelowY = spotlightFrame.maxY + config.verticalSeparation + panelHeight2
-    let position: CGPoint
-
-    if preferredBelowY + panelHeight2 <= containerBounds.maxY - config.verticalPadding {
-      position = .init(x: centeredX, y: preferredBelowY)
-    } else {
-      let preferredAboveY = spotlightFrame.minY - config.verticalSeparation - panelHeight2
-      let clampedY = min(
-        max(preferredAboveY, containerBounds.minY + config.verticalPadding + panelHeight2),
-        containerBounds.maxY - config.verticalPadding - panelHeight2
-      )
-      position = .init(x: centeredX, y: clampedY)
-    }
-
-    return position
-  }
-
-  /**
    Create the masking layer that dims the main view except for the region under the spotlight.
    */
   private var spotlightMask: some View {
@@ -302,15 +300,15 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
       // The mask that dims everything on the screen.
       spotlightBackingColor
-        .opacity(config.dimmingOpacity)
+        .opacity(config.viewConfig.dimmingOpacity)
         .zIndex(3)
 
       // The region that shows the item to spotlight.
-      RoundedRectangle(cornerRadius: config.cornerRadius)
+      RoundedRectangle(cornerRadius: config.viewConfig.cornerRadius)
         .frame(width: spotlightFrame.width, height: spotlightFrame.height)
         .position(x: spotlightFrame.midX, y: spotlightFrame.midY)
         .matchedGeometryEffect(id: selection, in: animationNamespace, properties: .frame, anchor: .center, isSource: false)
-        .blur(radius: config.blurRadius)
+        .blur(radius: config.viewConfig.blurRadius)
         .blendMode(.destinationOut)
         .zIndex(4)
     }
@@ -428,3 +426,4 @@ extension View {
 }
 
 #endif // DEBUG
+
