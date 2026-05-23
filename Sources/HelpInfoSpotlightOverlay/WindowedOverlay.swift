@@ -18,7 +18,9 @@ final class WindowManager<ID: Hashable, Overlay: View> {
   private var hostingController: UIHostingController<WindowedOverlay<ID, Overlay>>?
   private var windowedOverlayState: WindowedOverlayState<ID> = .init()
 
-  init() {}
+  init() {
+    print("WindowManager - init")
+  }
 
   /**
    Create/update window and its overlay view.
@@ -48,6 +50,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
       return EmptyView()
     }
 
+    print("WindowManager - show")
     let window = UIWindow(windowScene: scene)
     window.backgroundColor = .clear
     window.windowLevel = .alert
@@ -84,6 +87,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
    */
   private func hide(after duration: Duration) {
+    print("WindowManager - hide")
     Task { [weak self] in
       try? await Task.sleep(for: duration)
       if let self {
@@ -102,6 +106,10 @@ final class WindowManager<ID: Hashable, Overlay: View> {
 @Observable
 private class WindowedOverlayState<ID: Hashable> {
   var anchors: [ID: Anchor<CGRect>] = [:]
+
+  init() {
+    print("WindowedOverlayState - init")
+  }
 }
 
 /**
@@ -118,7 +126,6 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   private let animationNamespace: Namespace.ID
 
   @State var isVisible = false
-  @Environment(\.colorScheme) private var colorScheme
 
   init(
     selection: Binding<ID?>,
@@ -128,6 +135,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
     scrollViewProxy: ScrollViewProxy?,
     animationNamespace: Namespace.ID,
   ) {
+    print("WindowOverlay -init")
     self._selection = selection
     self.config = config
     self.windowedOverlayState = windowedOverlayState

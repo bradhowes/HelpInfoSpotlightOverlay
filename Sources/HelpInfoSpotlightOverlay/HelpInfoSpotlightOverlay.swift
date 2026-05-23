@@ -1,6 +1,7 @@
 // Copyright © 2026 Brad Howes. All rights reserved.
 //
-// Based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight
+// Originally based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight -- but the architecture and
+// feature set is vastly different now.
 
 import SwiftUI
 
@@ -128,7 +129,7 @@ extension View {
 /**
  View modifier that handles the display of a spotlight on a help item.
 
- See ``helpInfoSpotlightOverlay`` View modifier for details.
+ See ``helpInfoSpotlightOverlay`` view modifier for details.
  */
 private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
@@ -137,11 +138,20 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
   let config: HelpInfoOverlayConfig<ID, Overlay>
   @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
-  @Environment(\.colorScheme) private var colorScheme
+
+  init(
+    selection: Binding<ID?>,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
+    windowManager: WindowManager<ID, Overlay>?
+  ) {
+    print("SpotlightOverlayModifier - init - \(windowManager != nil)")
+    self._selection = selection
+    self.config = config
+    self.windowManager = windowManager
+  }
 
   func body(content: Content) -> some View {
     if config.viewConfig.scrollToItem {
-      let _ = print("scrollToItem true")
       ScrollViewReader { scrollViewProxy in
         contentModifier(content, scrollViewProxy: scrollViewProxy)
       }
@@ -227,18 +237,18 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
 struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
-  @Binding var selection: ID?
-  @State var pending: ID?
-  @State var position: CGPoint = .zero
-  let animationNamespace: Namespace.ID
+  @Binding private var selection: ID?
+  @State private var pending: ID?
+  @State private var position: CGPoint = .zero
 
-  let config: HelpInfoOverlayConfig<ID, Overlay>
-  let anchors: AnchorMap
-  let geometryProxy: GeometryProxy
-  let scrollViewProxy: ScrollViewProxy?
-  let selected: ID
-  let anchor: Anchor<CGRect>
-  let dismissAction: () -> Void
+  private let animationNamespace: Namespace.ID
+  private let config: HelpInfoOverlayConfig<ID, Overlay>
+  private let anchors: AnchorMap
+  private let geometryProxy: GeometryProxy
+  private let scrollViewProxy: ScrollViewProxy?
+  private let selected: ID
+  private let anchor: Anchor<CGRect>
+  private let dismissAction: () -> Void
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -253,6 +263,29 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     )
   }
 
+  init(
+    selection: Binding<ID?>,
+    animationNamespace: Namespace.ID,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
+    anchors: [ID: Anchor<CGRect>],
+    geometryProxy: GeometryProxy,
+    scrollViewProxy: ScrollViewProxy?,
+    selected: ID,
+    anchor: Anchor<CGRect>,
+    dismissAction: @escaping () -> Void
+  ) {
+    print("SpotlightOverlay - init")
+    self._selection = selection
+    self.animationNamespace = animationNamespace
+    self.config = config
+    self.anchors = anchors
+    self.geometryProxy = geometryProxy
+    self.scrollViewProxy = scrollViewProxy
+    self.selected = selected
+    self.anchor = anchor
+    self.dismissAction = dismissAction
+  }
+
   var body: some View {
     ZStack(alignment: .topLeading) {
       // The mask that dims everything on the screen but the item being focused on.
@@ -261,7 +294,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
       // The information card that shows the help info for the item being focused on.
       config.generator(selected, actions)
-        .preferredColorScheme(colorScheme)
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(SpotlightCoordinateSpace.name)).size
@@ -274,6 +306,11 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .clipped()
         .zIndex(2)
     }
+    .onAppear {
+      if let selection {
+        setPending(selection)
+      }
+    }
     .frame(width: containerBounds.width, height: containerBounds.height)
     .offset(x: -geometryProxy.safeAreaInsets.leading, y: -geometryProxy.safeAreaInsets.top)
     .animation(.smooth(duration: config.viewConfig.animationDuration), value: position)
@@ -285,17 +322,23 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     }
   }
 
-  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
-    if let value = config.previousId(selected: selected, anchors: anchors) {
+  private func setPending(_ value: ID) {
+    if self.pending != value {
+      print("SpotlightOverlay - setPending(\(value))")
       scrollViewProxy?.scrollTo(value)
       self.pending = value
     }
   }
 
+  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
+    if let value = config.previousId(selected: selected, anchors: anchors) {
+      setPending(value)
+    }
+  }
+
   private func nextAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
     if let value = config.nextId(selected: selected, anchors: anchors) {
-      scrollViewProxy?.scrollTo(value)
-      self.pending = value
+      setPending(value)
     }
   }
 
