@@ -64,6 +64,8 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
   }
 }
 
+#if DEBUG
+
 private enum HelpInfo {
   case login
   case addItem
@@ -142,3 +144,5 @@ extension HelpInfo: CaseIterable, HelpInfoProvider {
 #endif
 
 }
+
+#endif // DEBUG

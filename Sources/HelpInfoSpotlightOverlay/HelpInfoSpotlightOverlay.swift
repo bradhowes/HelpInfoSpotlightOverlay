@@ -4,7 +4,7 @@
 
 import SwiftUI
 
-public enum WindowedMode {
+public enum HelpInfoSpotlightWindowedMode {
   case useCustomWindow
   case none
 }
@@ -22,13 +22,7 @@ extension View {
     selection: Binding<ID?>,
     config: HelpInfoOverlayConfig<ID, Overlay>
   ) -> some View {
-    modifier(
-      HelpInfoSpotlightOverlayModifier(
-        selection: selection,
-        config: config,
-        windowManager: config.windowManager
-      )
-    )
+    modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -100,7 +94,7 @@ extension View {
     blurRadius: CGFloat = 6.0,
     dimmingOpacity: CGFloat = 0.7,
     scrollToItem: Bool = true,
-    windowedMode: WindowedMode = .useCustomWindow,
+    windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow,
     overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
     let config = HelpInfoOverlayConfig(
@@ -109,20 +103,15 @@ extension View {
         spotlightPadding: spotlightPadding,
         cornerRadius: cornerRadius,
         blurRadius: blurRadius,
-        dimmingOpacity: dimmingOpacity,
         animationDuration: animationDuration,
+        lightModeDimmingOpacity: dimmingOpacity,
+        darkModeDimmingOpacity: dimmingOpacity,
         scrollToItem: scrollToItem,
         windowedMode: windowedMode
       ),
       generator: overlay
     )
-    return modifier(
-      HelpInfoSpotlightOverlayModifier(
-        selection: selection,
-        config: config,
-        windowManager: config.windowManager
-      )
-    )
+    return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -132,7 +121,7 @@ extension View {
    - returns: modified view
    */
   public func helpInfoViewTag<ID: Hashable>(id: ID) -> some View {
-    modifier(HelpInfoViewTagModifier(id: id))
+    modifier(ViewTagModifier(id: id))
   }
 }
 
@@ -141,8 +130,8 @@ extension View {
 
  See ``helpInfoSpotlightOverlay`` View modifier for details.
  */
-private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
-  typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
+private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
+  typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
   let config: HelpInfoOverlayConfig<ID, Overlay>
@@ -170,9 +159,9 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
    */
   private func contentModifier(_ content: Content, scrollViewProxy: ScrollViewProxy?) -> some View {
     content
-      .coordinateSpace(.named(HelpInfoSpotlightCoordinateSpace.name))
+      .coordinateSpace(.named(SpotlightCoordinateSpace.name))
       .helpInfoSpotlightAnimationNamespace(animationNamespace)
-      .overlayPreferenceValue(HelpInfoSpotlightOverlayPreferenceKey<ID>.self) { anchors in
+      .overlayPreferenceValue(SpotlightOverlayPreferenceKey<ID>.self) { anchors in
         GeometryReader { geometryProxy in
           spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
         }
@@ -199,17 +188,16 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
     if let selected = selection, let anchor = anchors[selected] {
       if let windowManager {
 
-        // When using a top-level window to host the spotlight overlay, we need to create and show the window and its overlay view.
-        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
-        let _ = windowManager.show(
+        // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
+        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling. As such,
+        // this method can be called multiple times while the overlay is up.
+        windowManager.show(
           selection: $selection,
           config: config,
           anchors: anchors,
           scrollViewProxy: scrollViewProxy,
           animationNamespace: animationNamespace
         )
-        // The top-level window is showing the spotlight overlay, so nothing to inject here.
-        EmptyView()
       } else {
         // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
         // compared to windowed mode.
@@ -237,7 +225,7 @@ private struct HelpInfoSpotlightOverlayModifier<ID: Hashable, Overlay: View>: Vi
  View that shows the spotlight overlay mask and the information card with text about the item in the spotlight.
  */
 struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
-  typealias AnchorMap = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
+  typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
   @State var pending: ID?
@@ -276,7 +264,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .preferredColorScheme(colorScheme)
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
-          $0.frame(in: .named(HelpInfoSpotlightCoordinateSpace.name)).size
+          $0.frame(in: .named(SpotlightCoordinateSpace.name)).size
         } action: { panelSize in
           self.position = config.place(panelSize: panelSize, spotlightFrame: spotlightFrame, containerBounds: containerBounds)
         }
@@ -319,7 +307,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
       // The mask that dims everything on the screen.
       spotlightBackingColor
-        .opacity(config.viewConfig.dimmingOpacity)
+        .opacity(dimmingOpacity)
         .zIndex(3)
 
       // The region that shows the item to spotlight.
@@ -338,8 +326,12 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     }
   }
 
+  private var dimmingOpacity: CGFloat {
+    colorScheme == .light ? config.viewConfig.lightModeDimmingOpacity : config.viewConfig.darkModeDimmingOpacity
+  }
+
   private var spotlightBackingColor: Color {
-    colorScheme == .light ? .black : .white
+    colorScheme == .light ? config.viewConfig.lightModeMaskColor : config.viewConfig.darkModeMaskColor
   }
 }
 
@@ -347,7 +339,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
  Mapping of view help item ID tags and view anchor geometries made available via SwiftUI preferences system. These are used by the
  spotlight overlays to move from item to item in the view hiearchy.
  */
-struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
+struct SpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
   typealias Value = [ID: Anchor<CGRect>]
 
   static var defaultValue: Value { [:] }
@@ -366,22 +358,21 @@ struct HelpInfoSpotlightOverlayPreferenceKey<ID: Hashable>: PreferenceKey {
  Note that during tests, it is possible that `namespace` is not installed, thus the need to conditionally apply the
  `matchedGeometryEffect` modifier.
  */
-private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
+private struct ViewTagModifier<ID: Hashable>: ViewModifier {
   let id: ID
   @Environment(\.helpInfoSpotlightAnimationNamespace) private var namespace
 
   func body(content: Content) -> some View {
-    let _ = print("HelpInfoViewTagModifier \(id)")
     if let namespace = namespace {
       content
         .matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center, isSource: true)
-        .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
+        .transformAnchorPreference(key: SpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
         .id(id)
     } else {
       content
-        .transformAnchorPreference(key: HelpInfoSpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
+        .transformAnchorPreference(key: SpotlightOverlayPreferenceKey<ID>.self, value: .bounds) {
           $0[id] = $1
         }
         .id(id)
@@ -389,7 +380,7 @@ private struct HelpInfoViewTagModifier<ID: Hashable>: ViewModifier {
   }
 }
 
-private enum HelpInfoSpotlightCoordinateSpace {
+private enum SpotlightCoordinateSpace {
   // Shared coordinate space name used by spotlight sources and the container.
   static let name = "HelpInfoSpotlightCoordinateSpace"
 }

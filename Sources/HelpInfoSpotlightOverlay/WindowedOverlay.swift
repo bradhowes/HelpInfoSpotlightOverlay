@@ -13,7 +13,6 @@ import UIKit
  The window is torn down in the `hide` routine, which is triggered by a dismiss action.
  */
 @MainActor
-@Observable
 final class WindowManager<ID: Hashable, Overlay: View> {
   private var hostWindow: UIWindow?
   private var hostingController: UIHostingController<WindowedOverlay<ID, Overlay>>?
@@ -32,6 +31,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    - parameter anchors: the mapping of tagged help item IDs and their anchor geometries.
    - parameter scrollViewProxy: optional `ScrollViewProxy` to use to reposition a help item onto the screen.
    - parameter animationNamespace: the animation namespace to use
+   - returns: `EmptyView` as a placeholder in the parent hierarchy.
    */
   func show(
     selection: Binding<ID?>,
@@ -39,18 +39,18 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
     animationNamespace: Namespace.ID
-  ) {
+  ) -> some View {
     guard
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
     else {
       self.windowedOverlayState.anchors = anchors
-      return
+      return EmptyView()
     }
 
     let window = UIWindow(windowScene: scene)
     window.backgroundColor = .clear
-    window.windowLevel = .alert + 1  // Above sheets, alerts, etc.
+    window.windowLevel = .alert
     hostWindow = window
 
     let overlayView = WindowedOverlay<ID, Overlay>(
@@ -73,21 +73,20 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     hostingController = controller
     window.rootViewController = controller
     window.isHidden = false
+
+    return EmptyView()
   }
 
   /**
-   Tear-down the window.
+   Tear down the window with the dismissal of the overlay.
 
    - parameter duration: the amount of time to wait before tearing down. This should match the animation duration so that the view
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
    */
   private func hide(after duration: Duration) {
-    print("WindowManager.hide - BEGIN")
     Task { [weak self] in
       try? await Task.sleep(for: duration)
-      print("WindowManager.hide - after sleep")
       if let self {
-        print("WindowManager.hide - disposing of hostWindow")
         self.hostWindow?.isHidden = true
         self.hostWindow?.rootViewController = nil
         self.hostWindow = nil
@@ -98,28 +97,44 @@ final class WindowManager<ID: Hashable, Overlay: View> {
 }
 
 /**
- When the WindowedOverlay is up, allow for changes to the collection of anchors.
+ When the WindowedOverlay is up, allow for changes to the collection of anchors to affect the overlay view.
  */
 @Observable
-class WindowedOverlayState<ID: Hashable> {
+private class WindowedOverlayState<ID: Hashable> {
   var anchors: [ID: Anchor<CGRect>] = [:]
 }
 
 /**
  The main view of the custom UIWindow that shows the spotlight overlay.
  */
-struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
-  typealias Value = HelpInfoSpotlightOverlayPreferenceKey<ID>.Value
+private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
+  typealias Value = SpotlightOverlayPreferenceKey<ID>.Value
 
-  @Binding var selection: ID?
-  let config: HelpInfoOverlayConfig<ID, Overlay>
-  @State var windowedOverlayState: WindowedOverlayState<ID>
+  @Binding private var selection: ID?
+  private let config: HelpInfoOverlayConfig<ID, Overlay>
+  @State private var windowedOverlayState: WindowedOverlayState<ID>
+  private let dismissAction: () -> Void
+  private let scrollViewProxy: ScrollViewProxy?
+  private let animationNamespace: Namespace.ID
+
   @State var isVisible = false
-  let dismissAction: () -> Void
-  let scrollViewProxy: ScrollViewProxy?
-  let animationNamespace: Namespace.ID
+  @Environment(\.colorScheme) private var colorScheme
 
-  @Environment(\.colorScheme) var colorScheme
+  init(
+    selection: Binding<ID?>,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
+    windowedOverlayState: WindowedOverlayState<ID>,
+    dismissAction: @escaping () -> Void,
+    scrollViewProxy: ScrollViewProxy?,
+    animationNamespace: Namespace.ID,
+  ) {
+    self._selection = selection
+    self.config = config
+    self.windowedOverlayState = windowedOverlayState
+    self.dismissAction = dismissAction
+    self.scrollViewProxy = scrollViewProxy
+    self.animationNamespace = animationNamespace
+  }
 
   var body: some View {
     if let selected = selection, let anchor = self.windowedOverlayState.anchors[selected] {
