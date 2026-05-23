@@ -140,16 +140,10 @@ List of previous trips that have been taken.
     }, content: {
       SheetSpotlightDemo()
     })
-    .preferredColorScheme(colorScheme)
     .helpInfoSpotlightOverlay(
       selection: $selection,
       orderedIDs: Step.allCases,
-      generator: helpInfoOverlay,
-      framer: { _, anchor, proxy, config in
-        var frame = config.calculateItemFrame(anchor: anchor, proxy: proxy)
-        frame.size.height = min(frame.size.height, 200.0)
-        return frame
-      }
+      generator: helpInfoOverlay
     )
   }
 
