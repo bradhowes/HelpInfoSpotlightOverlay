@@ -44,7 +44,7 @@ public struct HelpInfoOverlayViewConfig {
     lightModeDimmingOpacity: CGFloat = 0.7,
     lightModeMaskColor: Color = .black,
     darkModeDimmingOpacity: CGFloat = 0.8,
-    darkModeMaskColor: Color = .white.mix(with: .black, by: 0.8),
+    darkModeMaskColor: Color = Color(red: 112.0 / 255.0, green: 66.0 / 255.0, blue: 20.0 / 255.0).mix(with: .black, by: 0.6),
     scrollToItem: Bool = true,
     windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow
   ) {
