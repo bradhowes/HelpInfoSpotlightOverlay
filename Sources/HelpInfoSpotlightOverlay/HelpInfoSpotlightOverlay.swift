@@ -141,7 +141,6 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
 
   func body(content: Content) -> some View {
     if config.viewConfig.scrollToItem {
-      let _ = print("scrollToItem true")
       ScrollViewReader { scrollViewProxy in
         contentModifier(content, scrollViewProxy: scrollViewProxy)
       }
