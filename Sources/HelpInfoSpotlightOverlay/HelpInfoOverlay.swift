@@ -20,8 +20,7 @@ import SwiftUI
  - returns: overlay view
  */
 public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
-  @Environment(\.colorScheme) var colorScheme
-  return VStack(spacing: 16) {
+  VStack(spacing: 16) {
     HelpInfoLayout {
       Text(item.title)
         .font(.title3.weight(.bold))

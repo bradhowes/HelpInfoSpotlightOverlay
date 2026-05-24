@@ -23,7 +23,7 @@ extension View {
     selection: Binding<ID?>,
     config: HelpInfoOverlayConfig<ID, Overlay>
   ) -> some View {
-    modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
+    modifier(SpotlightOverlayModifier(selection: selection, config: config))
   }
 
   /**
@@ -112,7 +112,24 @@ extension View {
       ),
       generator: overlay
     )
-    return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
+    return modifier(
+      SpotlightOverlayModifier(
+        selection: selection, config: .init(
+          orderedIDs: orderedIDs,
+          viewConfig: .init(
+            spotlightPadding: spotlightPadding,
+            cornerRadius: cornerRadius,
+            blurRadius: blurRadius,
+            animationDuration: animationDuration,
+            lightModeDimmingOpacity: dimmingOpacity,
+            darkModeDimmingOpacity: dimmingOpacity,
+            scrollToItem: scrollToItem,
+            windowedMode: windowedMode
+          ),
+          generator: overlay
+        )
+      )
+    )
   }
 
   /**
@@ -136,18 +153,14 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
 
   @Binding var selection: ID?
   let config: HelpInfoOverlayConfig<ID, Overlay>
-  @State var windowManager: WindowManager<ID, Overlay>?
+  let windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
+  @Environment(\.colorScheme) var colorScheme
 
-  init(
-    selection: Binding<ID?>,
-    config: HelpInfoOverlayConfig<ID, Overlay>,
-    windowManager: WindowManager<ID, Overlay>?
-  ) {
-    print("SpotlightOverlayModifier - init - \(windowManager != nil)")
+  init(selection: Binding<ID?>, config: HelpInfoOverlayConfig<ID, Overlay>) {
     self._selection = selection
     self.config = config
-    self.windowManager = windowManager
+    self.windowManager = config.windowManager()
   }
 
   func body(content: Content) -> some View {
@@ -195,36 +208,35 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
     geometryProxy: GeometryProxy,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
-    if let selected = selection, let anchor = anchors[selected] {
-      if let windowManager {
+    if let windowManager {
 
-        // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
-        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling. As such,
-        // this method can be called multiple times while the overlay is up.
-        windowManager.show(
-          selection: $selection,
-          config: config,
-          anchors: anchors,
-          scrollViewProxy: scrollViewProxy,
-          animationNamespace: animationNamespace
-        )
-      } else {
-        // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
-        // compared to windowed mode.
-        SpotlightOverlay(
-          selection: $selection,
-          animationNamespace: animationNamespace,
-          config: config,
-          anchors: anchors,
-          geometryProxy: geometryProxy,
-          scrollViewProxy: scrollViewProxy,
-          selected: selected,
-          anchor: anchor,
-          dismissAction: {
-            self.selection = nil
-          }
-        )
-      }
+      // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
+      // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling. As such,
+      // this method can be called multiple times while the overlay is up.
+      windowManager.embedOverlay(
+        selection: $selection,
+        animationNamespace: animationNamespace,
+        config: config,
+        anchors: anchors,
+        scrollViewProxy: scrollViewProxy,
+        colorScheme: colorScheme
+      )
+    } else if let selected = selection, let anchor = anchors[selected] {
+      // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
+      // compared to windowed mode.
+      SpotlightOverlay(
+        selection: $selection,
+        animationNamespace: animationNamespace,
+        config: config,
+        anchors: anchors,
+        geometryProxy: geometryProxy,
+        scrollViewProxy: scrollViewProxy,
+        selected: selected,
+        anchor: anchor,
+        dismissAction: {
+          self.selection = nil
+        }
+      )
     } else {
       EmptyView()
     }
@@ -274,7 +286,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     anchor: Anchor<CGRect>,
     dismissAction: @escaping () -> Void
   ) {
-    print("SpotlightOverlay - init")
     self._selection = selection
     self.animationNamespace = animationNamespace
     self.config = config
@@ -324,7 +335,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
   private func setPending(_ value: ID) {
     if self.pending != value {
-      print("SpotlightOverlay - setPending(\(value))")
       scrollViewProxy?.scrollTo(value)
       self.pending = value
     }
