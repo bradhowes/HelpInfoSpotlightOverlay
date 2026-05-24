@@ -6,11 +6,7 @@
 
 Swift package that provides an elegant way to spotlight a SwiftUI view and display help information about it.
 
-<table>
-<tr>
-<td>![light](lightMode.gif)</td><td>![dark](darkMode.gif)</td>
-</tr>
-</table>
+![light](lightMode.gif)![dark](darkMode.gif)
 
 ## Usage
 
