@@ -118,7 +118,6 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   private let animationNamespace: Namespace.ID
 
   @State var isVisible = false
-  @Environment(\.colorScheme) private var colorScheme
 
   init(
     selection: Binding<ID?>,

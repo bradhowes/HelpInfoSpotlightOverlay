@@ -42,7 +42,7 @@ extension View {
     selection: Binding<ID?>,
     orderedIDs: [ID] = [],
     viewConfig: HelpInfoOverlayViewConfig = .init(),
-    generator: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay,
+    generator: @escaping HelpInfoOverlayConfig<ID, Overlay>.Generator,
     placer: HelpInfoOverlayConfig<ID, Overlay>.Placer? = nil,
     framer: HelpInfoOverlayConfig<ID, Overlay>.Framer? = nil
   ) -> some View where ID: HelpInfoProvider {
@@ -258,8 +258,8 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .zIndex(1)
 
       // The information card that shows the help info for the item being focused on.
-      config.generator(selected, actions)
-        .preferredColorScheme(colorScheme)
+      config.generator(selected, actions, colorScheme)
+        // Generate image from view for proper animation of contents when the view moves and resizes.
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(SpotlightCoordinateSpace.name)).size
@@ -267,8 +267,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
           self.position = config.place(panelSize: panelSize, spotlightFrame: spotlightFrame, containerBounds: containerBounds)
         }
         .frame(maxWidth: containerBounds.width - config.viewConfig.horizontalPadding * 2)
-        .position(
-          self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
+        .position(self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
         .clipped()
         .zIndex(2)
     }
