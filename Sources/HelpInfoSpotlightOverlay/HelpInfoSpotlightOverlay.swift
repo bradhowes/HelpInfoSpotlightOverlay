@@ -162,9 +162,7 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
       .coordinateSpace(.named(SpotlightCoordinateSpace.name))
       .helpInfoSpotlightAnimationNamespace(animationNamespace)
       .overlayPreferenceValue(SpotlightOverlayPreferenceKey<ID>.self) { anchors in
-        GeometryReader { geometryProxy in
-          spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
-        }
+        spotlightOverlayContent(anchors: anchors, scrollViewProxy: scrollViewProxy)
       }
       .animation(.smooth(duration: config.viewConfig.animationDuration), value: selection)
   }
@@ -182,7 +180,6 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
   @ViewBuilder
   private func spotlightOverlayContent(
     anchors: AnchorMap,
-    geometryProxy: GeometryProxy,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
     if let selected = selection, let anchor = anchors[selected] {
@@ -201,19 +198,21 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
       } else {
         // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
         // compared to windowed mode.
-        SpotlightOverlay(
-          selection: $selection,
-          animationNamespace: animationNamespace,
-          config: config,
-          anchors: anchors,
-          geometryProxy: geometryProxy,
-          scrollViewProxy: scrollViewProxy,
-          selected: selected,
-          anchor: anchor,
-          dismissAction: {
-            self.selection = nil
-          }
-        )
+        GeometryReader { geometryProxy in
+          SpotlightOverlay(
+            selection: $selection,
+            animationNamespace: animationNamespace,
+            config: config,
+            anchors: anchors,
+            geometryProxy: geometryProxy,
+            scrollViewProxy: scrollViewProxy,
+            selected: selected,
+            anchor: anchor,
+            dismissAction: {
+              self.selection = nil
+            }
+          )
+        }
       }
     } else {
       EmptyView()
