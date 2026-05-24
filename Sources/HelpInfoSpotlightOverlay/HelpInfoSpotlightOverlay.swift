@@ -185,9 +185,7 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
       .coordinateSpace(.named(SpotlightCoordinateSpace.name))
       .helpInfoSpotlightAnimationNamespace(animationNamespace)
       .overlayPreferenceValue(SpotlightOverlayPreferenceKey<ID>.self) { anchors in
-        GeometryReader { geometryProxy in
-          spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
-        }
+        spotlightOverlayContent(anchors: anchors, scrollViewProxy: scrollViewProxy)
       }
       .animation(.smooth(duration: config.viewConfig.animationDuration), value: selection)
   }
@@ -198,14 +196,12 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
    and the contents of the info view will change to show the help text for the new view.
 
    - parameter anchors: the collection of known UI elements with `Anchor<CGRect>` values.
-   - parameter geometryProxy: a `GeometryProxy` to use to obtain frame values from the anchors.
    - parameter scrollViewProxy: a `ScrollViewProxy` to use to scroll help items into view.
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
   private func spotlightOverlayContent(
     anchors: AnchorMap,
-    geometryProxy: GeometryProxy,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
     if let windowManager {
@@ -223,20 +219,22 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
       )
     } else if let selected = selection, let anchor = anchors[selected] {
       // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
-      // compared to windowed mode.
-      SpotlightOverlay(
-        selection: $selection,
-        animationNamespace: animationNamespace,
-        config: config,
-        anchors: anchors,
-        geometryProxy: geometryProxy,
-        scrollViewProxy: scrollViewProxy,
-        selected: selected,
-        anchor: anchor,
-        dismissAction: {
-          self.selection = nil
-        }
-      )
+      // compared to windowed mode. Need a `GeometryProxy` to decode the anchor geometries.
+      GeometryReader { geometryProxy in
+        SpotlightOverlay(
+          selection: $selection,
+          animationNamespace: animationNamespace,
+          config: config,
+          anchors: anchors,
+          geometryProxy: geometryProxy,
+          scrollViewProxy: scrollViewProxy,
+          selected: selected,
+          anchor: anchor,
+          dismissAction: {
+            self.selection = nil
+          }
+        )
+      }
     } else {
       EmptyView()
     }
