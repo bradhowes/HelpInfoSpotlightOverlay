@@ -42,7 +42,7 @@ extension View {
     selection: Binding<ID?>,
     orderedIDs: [ID] = [],
     viewConfig: HelpInfoOverlayViewConfig = .init(),
-    generator: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay,
+    generator: @escaping HelpInfoOverlayConfig<ID, Overlay>.Generator,
     placer: HelpInfoOverlayConfig<ID, Overlay>.Placer? = nil,
     framer: HelpInfoOverlayConfig<ID, Overlay>.Framer? = nil
   ) -> some View where ID: HelpInfoProvider {
@@ -112,7 +112,7 @@ extension View {
             scrollToItem: scrollToItem,
             windowedMode: windowedMode
           ),
-          generator: overlay
+          generator: { id, actions, _ in overlay(id, actions) }
         )
       )
     )
@@ -141,7 +141,6 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
   let config: HelpInfoOverlayConfig<ID, Overlay>
   @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
-  @Environment(\.colorScheme) private var colorScheme
 
   init(
    selection: Binding<ID?>,
@@ -271,8 +270,8 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .zIndex(1)
 
       // The information card that shows the help info for the item being focused on.
-      config.generator(selected, actions)
-        .preferredColorScheme(colorScheme)
+      config.generator(selected, actions, colorScheme)
+        // Generate image from view for proper animation of contents when the view moves and resizes.
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(SpotlightCoordinateSpace.name)).size
@@ -280,8 +279,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
           self.position = config.place(panelSize: panelSize, spotlightFrame: spotlightFrame, containerBounds: containerBounds)
         }
         .frame(maxWidth: containerBounds.width - config.viewConfig.horizontalPadding * 2)
-        .position(
-          self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
+        .position(self.position == .zero ? .init(x: containerBounds.midX, y: containerBounds.midY) : self.position)
         .clipped()
         .zIndex(2)
     }

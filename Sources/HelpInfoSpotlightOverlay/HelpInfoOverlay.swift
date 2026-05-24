@@ -19,9 +19,12 @@ import SwiftUI
  - parameter actions: the collection of actions for buttons in the overlay view
  - returns: overlay view
  */
-public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actions: HelpInfoSpotlightOverlayActions) -> some View {
-  @Environment(\.colorScheme) var colorScheme
-  return VStack(spacing: 16) {
+public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
+  for item: ID,
+  actions: HelpInfoSpotlightOverlayActions,
+  colorScheme: ColorScheme
+) -> some View {
+  VStack(spacing: 16) {
     HelpInfoLayout {
       Text(item.title)
         .font(.title3.weight(.bold))
@@ -106,7 +109,8 @@ struct DemoAppView: View {
     }
     .helpInfoSpotlightOverlay(
       selection: $selectedHelpInfoItem,
-      config: .init(orderedIDs: HelpInfo.allCases, generator: helpInfoOverlay)
+      orderedIDs: HelpInfo.allCases,
+      generator: helpInfoOverlay
     )
   }
 }

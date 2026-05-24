@@ -10,7 +10,7 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
 
   public typealias Placer = (_ panelSize: CGSize, _ spotlightFrame: CGRect, _ containerBounds: CGRect, _ config: Self) -> CGPoint
   public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ config: Self) -> CGRect
-  public typealias Generator = (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
+  public typealias Generator = (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions, _ colorScheme: ColorScheme) -> Overlay
 
   public var orderedIDs: [ID]
   public var viewConfig: HelpInfoOverlayViewConfig
