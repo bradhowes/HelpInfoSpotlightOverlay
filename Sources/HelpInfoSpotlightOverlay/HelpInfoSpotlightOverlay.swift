@@ -23,7 +23,7 @@ extension View {
     selection: Binding<ID?>,
     config: HelpInfoOverlayConfig<ID, Overlay>
   ) -> some View {
-    modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
+    modifier(SpotlightOverlayModifier(selection: selection, config: config))
   }
 
   /**
@@ -98,21 +98,25 @@ extension View {
     windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow,
     overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-    let config = HelpInfoOverlayConfig(
-      orderedIDs: orderedIDs,
-      viewConfig: .init(
-        spotlightPadding: spotlightPadding,
-        cornerRadius: cornerRadius,
-        blurRadius: blurRadius,
-        animationDuration: animationDuration,
-        lightModeDimmingOpacity: dimmingOpacity,
-        darkModeDimmingOpacity: dimmingOpacity,
-        scrollToItem: scrollToItem,
-        windowedMode: windowedMode
-      ),
-      generator: { id, actions, _ in overlay(id, actions) }
+    modifier(
+      SpotlightOverlayModifier(
+        selection: selection,
+        config: .init(
+          orderedIDs: orderedIDs,
+          viewConfig: .init(
+            spotlightPadding: spotlightPadding,
+            cornerRadius: cornerRadius,
+            blurRadius: blurRadius,
+            animationDuration: animationDuration,
+            lightModeDimmingOpacity: dimmingOpacity,
+            darkModeDimmingOpacity: dimmingOpacity,
+            scrollToItem: scrollToItem,
+            windowedMode: windowedMode
+            ),
+          generator: { id, actions, _ in overlay(id, actions) }
+        )
+      )
     )
-    return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -134,11 +138,20 @@ extension View {
 private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
-  @Binding var selection: ID?
-  let config: HelpInfoOverlayConfig<ID, Overlay>
-  @State var windowManager: WindowManager<ID, Overlay>?
+  @Binding private var selection: ID?
+  private let config: HelpInfoOverlayConfig<ID, Overlay>
+  @State private var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
   @Environment(\.colorScheme) private var colorScheme
+
+  init(
+    selection: Binding<ID?>,
+    config: HelpInfoOverlayConfig<ID, Overlay>
+  ) {
+    self._selection = selection
+    self.config = config
+    self._windowManager = .init(initialValue: config.windowManager)
+  }
 
   func body(content: Content) -> some View {
     if config.viewConfig.scrollToItem {
