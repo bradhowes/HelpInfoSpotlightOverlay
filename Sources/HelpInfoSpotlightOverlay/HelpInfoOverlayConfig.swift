@@ -21,11 +21,10 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
   @MainActor
   var windowManager: WindowManager<ID, Overlay>? {
 #if os(iOS)
-    let windowManager: WindowManager<ID, Overlay>? = viewConfig.windowedMode == .useCustomWindow ? .init() : nil
+    viewConfig.windowedMode == .useCustomWindow ? WindowManager<ID, Overlay>() : nil
 #else
-    let windowManager: WindowManager<ID, Overlay>? = nil
+    nil
 #endif
-    return windowManager
   }
 
   /**
