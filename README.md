@@ -1,4 +1,4 @@
-[![][spiv]][spi]
+![][spiv]][spi]
 [![][spip]][spi]
 [![][mit]][license]
 
@@ -6,7 +6,7 @@
 
 Swift package that provides an elegant way to spotlight a SwiftUI view and display help information about it.
 
-![demo](demo.gif)
+![light](lightMode.gif)![dark](darkMode.gif)
 
 ## Usage
 
