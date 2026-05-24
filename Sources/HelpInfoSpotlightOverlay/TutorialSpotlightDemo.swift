@@ -6,7 +6,6 @@ import SwiftUI
  Originally based on Artem Mirzabekian's repo -- https://github.com/Livsy90/TutorialSpotlight
  */
 public struct TutorialSpotlightDemo: View {
-  @Environment(\.colorScheme) var colorScheme
 
   enum Step: CaseIterable, HelpInfoProvider {
     case profile
@@ -297,7 +296,6 @@ List of previous trips that have been taken.
 }
 
 struct SheetSpotlightDemo: View {
-  @Environment(\.colorScheme) var colorScheme
 
   enum Step: CaseIterable, HelpInfoProvider {
     case title
@@ -387,7 +385,7 @@ extension View {
   }
 }
 
-#Preview {
+public func tutorialSpotlightDemo() -> some View {
 
 #if os(macOS)
 
@@ -399,7 +397,10 @@ extension View {
   TutorialSpotlightDemo()
 
 #endif
+}
 
+#Preview {
+  tutorialSpotlightDemo()
 }
 
 #endif // DEBUG
