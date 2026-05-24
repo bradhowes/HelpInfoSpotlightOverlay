@@ -1,7 +1,6 @@
 // Copyright © 2026 Brad Howes. All rights reserved.
 //
-// Originally based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight -- but the architecture and
-// feature set is vastly different now.
+// Based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight
 
 import SwiftUI
 
@@ -23,7 +22,7 @@ extension View {
     selection: Binding<ID?>,
     config: HelpInfoOverlayConfig<ID, Overlay>
   ) -> some View {
-    modifier(SpotlightOverlayModifier(selection: selection, config: config))
+    modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -98,24 +97,21 @@ extension View {
     windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow,
     overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-    modifier(
-      SpotlightOverlayModifier(
-        selection: selection, config: .init(
-          orderedIDs: orderedIDs,
-          viewConfig: .init(
-            spotlightPadding: spotlightPadding,
-            cornerRadius: cornerRadius,
-            blurRadius: blurRadius,
-            animationDuration: animationDuration,
-            lightModeDimmingOpacity: dimmingOpacity,
-            darkModeDimmingOpacity: dimmingOpacity,
-            scrollToItem: scrollToItem,
-            windowedMode: windowedMode
-          ),
-          generator: overlay
-        )
-      )
+    let config = HelpInfoOverlayConfig(
+      orderedIDs: orderedIDs,
+      viewConfig: .init(
+        spotlightPadding: spotlightPadding,
+        cornerRadius: cornerRadius,
+        blurRadius: blurRadius,
+        animationDuration: animationDuration,
+        lightModeDimmingOpacity: dimmingOpacity,
+        darkModeDimmingOpacity: dimmingOpacity,
+        scrollToItem: scrollToItem,
+        windowedMode: windowedMode
+      ),
+      generator: overlay
     )
+    return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -132,25 +128,20 @@ extension View {
 /**
  View modifier that handles the display of a spotlight on a help item.
 
- See ``helpInfoSpotlightOverlay`` view modifier for details.
+ See ``helpInfoSpotlightOverlay`` View modifier for details.
  */
 private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
   @Binding var selection: ID?
   let config: HelpInfoOverlayConfig<ID, Overlay>
-  let windowManager: WindowManager<ID, Overlay>?
+  @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
-  @Environment(\.colorScheme) var colorScheme
-
-  init(selection: Binding<ID?>, config: HelpInfoOverlayConfig<ID, Overlay>) {
-    self._selection = selection
-    self.config = config
-    self.windowManager = config.windowManager()
-  }
+  @Environment(\.colorScheme) private var colorScheme
 
   func body(content: Content) -> some View {
     if config.viewConfig.scrollToItem {
+      let _ = print("scrollToItem true")
       ScrollViewReader { scrollViewProxy in
         contentModifier(content, scrollViewProxy: scrollViewProxy)
       }
@@ -171,7 +162,9 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
       .coordinateSpace(.named(SpotlightCoordinateSpace.name))
       .helpInfoSpotlightAnimationNamespace(animationNamespace)
       .overlayPreferenceValue(SpotlightOverlayPreferenceKey<ID>.self) { anchors in
-        spotlightOverlayContent(anchors: anchors, scrollViewProxy: scrollViewProxy)
+        GeometryReader { geometryProxy in
+          spotlightOverlayContent(anchors: anchors, geometryProxy: geometryProxy, scrollViewProxy: scrollViewProxy)
+        }
       }
       .animation(.smooth(duration: config.viewConfig.animationDuration), value: selection)
   }
@@ -182,46 +175,45 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
    and the contents of the info view will change to show the help text for the new view.
 
    - parameter anchors: the collection of known UI elements with `Anchor<CGRect>` values.
+   - parameter geometryProxy: a `GeometryProxy` to use to obtain frame values from the anchors.
    - parameter scrollViewProxy: a `ScrollViewProxy` to use to scroll help items into view.
    - returns: new view made up of a spotlight mask and a info view overlay containing the help text for the active item.
    */
   @ViewBuilder
   private func spotlightOverlayContent(
     anchors: AnchorMap,
+    geometryProxy: GeometryProxy,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
     if let selected = selection, let anchor = anchors[selected] {
       if let windowManager {
 
         // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
-        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
-        // As such, this method can be called multiple times while the overlay is up.
-        windowManager.embedOverlay(
+        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling. As such,
+        // this method can be called multiple times while the overlay is up.
+        windowManager.show(
+          selection: $selection,
+          config: config,
+          anchors: anchors,
+          scrollViewProxy: scrollViewProxy,
+          animationNamespace: animationNamespace
+        )
+      } else {
+        // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
+        // compared to windowed mode.
+        SpotlightOverlay(
           selection: $selection,
           animationNamespace: animationNamespace,
           config: config,
           anchors: anchors,
+          geometryProxy: geometryProxy,
           scrollViewProxy: scrollViewProxy,
-          colorScheme: colorScheme
+          selected: selected,
+          anchor: anchor,
+          dismissAction: {
+            self.selection = nil
+          }
         )
-      } else {
-        // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
-        // compared to windowed mode. Need a `GeometryProxy` to decode the anchor geometries.
-        GeometryReader { geometryProxy in
-          SpotlightOverlay(
-            selection: $selection,
-            animationNamespace: animationNamespace,
-            config: config,
-            anchors: anchors,
-            geometryProxy: geometryProxy,
-            scrollViewProxy: scrollViewProxy,
-            selected: selected,
-            anchor: anchor,
-            dismissAction: {
-              self.selection = nil
-            }
-          )
-        }
       }
     } else {
       EmptyView()
@@ -235,18 +227,18 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
 struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
-  @Binding private var selection: ID?
-  @State private var pending: ID?
-  @State private var position: CGPoint = .zero
+  @Binding var selection: ID?
+  @State var pending: ID?
+  @State var position: CGPoint = .zero
+  let animationNamespace: Namespace.ID
 
-  private let animationNamespace: Namespace.ID
-  private let config: HelpInfoOverlayConfig<ID, Overlay>
-  private let anchors: AnchorMap
-  private let geometryProxy: GeometryProxy
-  private let scrollViewProxy: ScrollViewProxy?
-  private let selected: ID
-  private let anchor: Anchor<CGRect>
-  private let dismissAction: () -> Void
+  let config: HelpInfoOverlayConfig<ID, Overlay>
+  let anchors: AnchorMap
+  let geometryProxy: GeometryProxy
+  let scrollViewProxy: ScrollViewProxy?
+  let selected: ID
+  let anchor: Anchor<CGRect>
+  let dismissAction: () -> Void
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -261,28 +253,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     )
   }
 
-  init(
-    selection: Binding<ID?>,
-    animationNamespace: Namespace.ID,
-    config: HelpInfoOverlayConfig<ID, Overlay>,
-    anchors: [ID: Anchor<CGRect>],
-    geometryProxy: GeometryProxy,
-    scrollViewProxy: ScrollViewProxy?,
-    selected: ID,
-    anchor: Anchor<CGRect>,
-    dismissAction: @escaping () -> Void
-  ) {
-    self._selection = selection
-    self.animationNamespace = animationNamespace
-    self.config = config
-    self.anchors = anchors
-    self.geometryProxy = geometryProxy
-    self.scrollViewProxy = scrollViewProxy
-    self.selected = selected
-    self.anchor = anchor
-    self.dismissAction = dismissAction
-  }
-
   var body: some View {
     ZStack(alignment: .topLeading) {
       // The mask that dims everything on the screen but the item being focused on.
@@ -291,6 +261,7 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
 
       // The information card that shows the help info for the item being focused on.
       config.generator(selected, actions)
+        .preferredColorScheme(colorScheme)
         .drawingGroup()
         .onGeometryChange(for: CGSize.self) {
           $0.frame(in: .named(SpotlightCoordinateSpace.name)).size
@@ -303,11 +274,6 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
         .clipped()
         .zIndex(2)
     }
-    .onAppear {
-      if let selection {
-        setPending(selection)
-      }
-    }
     .frame(width: containerBounds.width, height: containerBounds.height)
     .offset(x: -geometryProxy.safeAreaInsets.leading, y: -geometryProxy.safeAreaInsets.top)
     .animation(.smooth(duration: config.viewConfig.animationDuration), value: position)
@@ -319,22 +285,17 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     }
   }
 
-  private func setPending(_ value: ID) {
-    if self.pending != value {
+  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
+    if let value = config.previousId(selected: selected, anchors: anchors) {
       scrollViewProxy?.scrollTo(value)
       self.pending = value
     }
   }
 
-  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
-    if let value = config.previousId(selected: selected, anchors: anchors) {
-      setPending(value)
-    }
-  }
-
   private func nextAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
     if let value = config.nextId(selected: selected, anchors: anchors) {
-      setPending(value)
+      scrollViewProxy?.scrollTo(value)
+      self.pending = value
     }
   }
 

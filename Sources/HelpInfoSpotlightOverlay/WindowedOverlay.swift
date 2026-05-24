@@ -18,6 +18,8 @@ final class WindowManager<ID: Hashable, Overlay: View> {
   private var hostingController: UIHostingController<WindowedOverlay<ID, Overlay>>?
   private var windowedOverlayState: WindowedOverlayState<ID> = .init()
 
+  init() {}
+
   /**
    Create/update window and its overlay view.
 
@@ -25,27 +27,24 @@ final class WindowManager<ID: Hashable, Overlay: View> {
    create the window and show it.
 
    - parameter selection: the binding to use to track the currently active help item.
-   - parameter animationNamespace: the animation namespace to use
    - parameter config: the configuration to use for behavior and UI settings.
    - parameter anchors: the mapping of tagged help item IDs and their anchor geometries.
    - parameter scrollViewProxy: optional `ScrollViewProxy` to use to reposition a help item onto the screen.
-   - parameter colorScheme: the current color scheme for the view hierarchy of the caller.
+   - parameter animationNamespace: the animation namespace to use
    - returns: `EmptyView` as a placeholder in the parent hierarchy.
    */
-  func embedOverlay(
+  func show(
     selection: Binding<ID?>,
-    animationNamespace: Namespace.ID,
     config: HelpInfoOverlayConfig<ID, Overlay>,
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
-    colorScheme: ColorScheme
+    animationNamespace: Namespace.ID
   ) -> some View {
     guard
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
     else {
       self.windowedOverlayState.anchors = anchors
-      self.windowedOverlayState.colorScheme = colorScheme
       return EmptyView()
     }
 
@@ -53,8 +52,6 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     window.backgroundColor = .clear
     window.windowLevel = .alert
     hostWindow = window
-    windowedOverlayState.anchors = anchors
-    windowedOverlayState.colorScheme = colorScheme
 
     let overlayView = WindowedOverlay<ID, Overlay>(
       selection: selection,
@@ -81,7 +78,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
   }
 
   /**
-   Tear down the window when the help info overlay is dismissed.
+   Tear down the window with the dismissal of the overlay.
 
    - parameter duration: the amount of time to wait before tearing down. This should match the animation duration so that the view
    hierarchy exists while the animation used during the dismissal of the spotlight is active.
@@ -100,14 +97,11 @@ final class WindowManager<ID: Hashable, Overlay: View> {
 }
 
 /**
- When the `WindowedOverlay` is up, allow for changes to the collection of anchors or the colorScheme to affect the overlay view.
- This is necessary since `WindowedOverlay` is in a different view hierarchy than the view modified with the original
- `helpInfoSpotlightOverlay` modifier.
+ When the WindowedOverlay is up, allow for changes to the collection of anchors to affect the overlay view.
  */
 @Observable
 private class WindowedOverlayState<ID: Hashable> {
   var anchors: [ID: Anchor<CGRect>] = [:]
-  var colorScheme: ColorScheme = .light
 }
 
 /**
@@ -124,6 +118,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   private let animationNamespace: Namespace.ID
 
   @State var isVisible = false
+  @Environment(\.colorScheme) private var colorScheme
 
   init(
     selection: Binding<ID?>,
@@ -157,7 +152,6 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
           anchor: anchor,
           dismissAction: dismissAction,
         )
-        .environment(\.colorScheme, windowedOverlayState.colorScheme)
       }
       // Animate the appearance of the spotlight overlay. The animation for the disappearance is handled in the `dismissAction`.
       .opacity(isVisible ? 1 : 0)
@@ -197,17 +191,13 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 final class WindowManager<ID: Hashable, Overlay: View> {
   init() {}
 
-  func embedOverlay(
+  func show(
     selection: Binding<ID?>,
-    animationNamespace: Namespace.ID,
-    config: HelpInfoOverlayConfig<ID, Overlay>,
+    config: Config<ID, Overlay>,
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
-    colorScheme: ColorScheme
-  ) -> some View
-  {
-    EmptyView()
-  }
+    animationNamespace: Namespace.ID
+  ) {}
 }
 
 #endif // os(iOS)

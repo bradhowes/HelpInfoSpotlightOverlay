@@ -10,7 +10,7 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
 
   public typealias Placer = (_ panelSize: CGSize, _ spotlightFrame: CGRect, _ containerBounds: CGRect, _ config: Self) -> CGPoint
   public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ config: Self) -> CGRect
-  public typealias Generator = (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
+  public typealias Generator = (ID, HelpInfoSpotlightOverlayActions) -> Overlay
 
   public var orderedIDs: [ID]
   public var viewConfig: HelpInfoOverlayViewConfig
@@ -19,12 +19,13 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
   public var framer: Framer?
 
   @MainActor
-  func windowManager() -> WindowManager<ID, Overlay>? {
+  var windowManager: WindowManager<ID, Overlay>? {
 #if os(iOS)
-    viewConfig.windowedMode == .useCustomWindow ? .init() : nil
+    let windowManager: WindowManager<ID, Overlay>? = viewConfig.windowedMode == .useCustomWindow ? .init() : nil
 #else
-    nil
+    let windowManager: WindowManager<ID, Overlay>? = nil
 #endif
+    return windowManager
   }
 
   /**
