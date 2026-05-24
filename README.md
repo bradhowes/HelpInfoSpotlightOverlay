@@ -8,16 +8,23 @@ Swift package that provides an elegant way to spotlight a SwiftUI view and displ
 
 ![light](lightMode.gif)![dark](darkMode.gif)
 
+## Features
+
+* Supports customized light and dark mode rendering configurations.
+* Can "scroll to" a view item to make it visible before showing the help info.
+* Allows for customized positioning of the help info overlay and sizing of the spotlight frame.
+* Properly renders over sheets.
+
 ## Usage
 
 Define an `enum` to serve as a source of unique ids to tag important views in your UI:
 
 ```swift
 enum HelpInfo {
-case login
-case addItem
-case deleteItem
-case changeName
+  case login
+  case addItem
+  case deleteItem
+  case changeName
 }
 ```
 
@@ -69,7 +76,7 @@ struct DemoAppView: View {
     .helpInfoSpotlightOverlay(
       selection: $selectedHelpInfoItem, 
       orderedIDs: [HelpInfo.login, .addItem, .deleteItem, .changeName],
-      overlay: helpInfoOverlay
+      generator: helpInfoOverlay
     )
   }
 }
@@ -109,15 +116,41 @@ This is only necessary when using the built-in `helpInfoOverlay`.
 ## Configuration
 
 The `helpInfoSpotlightOverlay` view modifier requires three values, but it accepts addional, optional ones to customize the
-behavior and appearance of the spotlite (defaults given in parentheses):
+behavior and appearance of the spotlight and the help info overlays.
+
+```
+public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
+  selection: Binding<ID?>,
+  orderedIDs: [ID] = [],
+  viewConfig: HelpInfoOverlayViewConfig = .init(),
+  generator: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay,
+  placer: HelpInfoOverlayConfig<ID, Overlay>.Placer? = nil,
+  framer: HelpInfoOverlayConfig<ID, Overlay>.Framer? = nil
+) -> some View where ID: HelpInfoProvider {
+```
+
+The `placer` function can be used to handle where the help info overlay view will appear. The default behavior is for it to
+appear centered and below the spotlight frame or above it depending on what space is available in the container.
+
+The `framer` function can be used to adjust the spotlight frame that is drawn around the view item. The default behavior
+is to expand the frame by `spotlightPadding` and to add a corner radius per the values in the `viewConfig`.
+
+The `viewConfig` allows for customization of the appearance of theoverlay views. It contains the following attributes
+the (defaults given in parentheses):
 
 * `spotlightPadding` -- padding to the spotlight region to make it larger (positive) or smaller (negative). (8)
 * `cornerRadius` -- a corner radius to apply to the spotlight area rectangle. (28)
-* `animationDuration` -- the duration of the animations used by the views. (0.3)
 * `blurRadius` -- the amount of blurring to apply to the edge of the spotlight. (6)
-* `dimmingOpacity` -- how opaque the overlay is that covers the root view, minus the spotlight region. (0.8)
+* `horizonalPadding` -- padding to the leading and trailing edges of the help info overlay (16)
+* `verticalPadding` -- padding to the top and bottom edges of the help info overlay (24)
+* `verticalSeparation` -- desired separation between the spotlight region and the help info overlay view (24)
+* `animationDuration` -- the duration of the animations used by the views. (0.65)
+* `lightModeDimmingOpacity` -- opacity of the masking overlay that covers the root view, minus the spotlight region. (0.7)
+* `lightModeMaskColor` -- color of the masking overlay view (`.black`)
+* `darkModeDimmingOpacity` -- opacity of the masking overlay that covers the root view, minus the spotlight region. (0.8)
+* `darkModeMaskColor` -- color of the masking overlay view (a sepia tone)
 * `scrollToItem` -- when `true`, attempts to make visible the view to spotlight. (true)
-* `windowedMode` -- if set to `.useCustomWindow`, installs the overlay in a custom UIWindow. Otherwise, installs the overlay in the
+* `windowedMode` -- controls if the overlays are in a custom UIWindow for better rendering (`.useCustomWindow`)
 view hiearchy attached to the view modifier.
 
 The `scrollToItem` is done by wrapping the main view in a `ScrollViewReader` and then calling `scrollTo` with the ID of the 
@@ -126,9 +159,9 @@ your SwiftUI code.
 
 ## Origins
 
-The code in this package derived from code in the [TutorialSpotlight][ts]
-package by Artem Mirzabekian. However, there were sufficient changes that I created my
-own. (the demo page shown above is largely from his source with some adjustments to handle "dark" mode.)
+The code in this package derived from code in the [TutorialSpotlight][ts] package by Artem Mirzabekian. However, there
+were sufficient changes that I created my own. (the demo page shown above is largely from his source with some
+adjustments to handle "dark" mode and to show off the `scrollTo` functionality.)
 
 ## Alternatives
 
