@@ -109,7 +109,7 @@ extension View {
         scrollToItem: scrollToItem,
         windowedMode: windowedMode
       ),
-      generator: overlay
+      generator: { id, actions, _ in overlay(id, actions) }
     )
     return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
