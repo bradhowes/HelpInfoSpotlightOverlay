@@ -22,7 +22,7 @@ extension View {
     selection: Binding<ID?>,
     config: HelpInfoOverlayConfig<ID, Overlay>
   ) -> some View {
-    modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
+    modifier(SpotlightOverlayModifier(selection: selection, config: config))
   }
 
   /**
@@ -97,21 +97,25 @@ extension View {
     windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow,
     overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-    let config = HelpInfoOverlayConfig(
-      orderedIDs: orderedIDs,
-      viewConfig: .init(
-        spotlightPadding: spotlightPadding,
-        cornerRadius: cornerRadius,
-        blurRadius: blurRadius,
-        animationDuration: animationDuration,
-        lightModeDimmingOpacity: dimmingOpacity,
-        darkModeDimmingOpacity: dimmingOpacity,
-        scrollToItem: scrollToItem,
-        windowedMode: windowedMode
-      ),
-      generator: overlay
+    modifier(
+      SpotlightOverlayModifier(
+        selection: selection,
+        config: .init(
+          orderedIDs: orderedIDs,
+          viewConfig: .init(
+            spotlightPadding: spotlightPadding,
+            cornerRadius: cornerRadius,
+            blurRadius: blurRadius,
+            animationDuration: animationDuration,
+            lightModeDimmingOpacity: dimmingOpacity,
+            darkModeDimmingOpacity: dimmingOpacity,
+            scrollToItem: scrollToItem,
+            windowedMode: windowedMode
+          ),
+          generator: overlay
+        )
+      )
     )
-    return modifier(SpotlightOverlayModifier(selection: selection, config: config, windowManager: config.windowManager))
   }
 
   /**
@@ -138,6 +142,15 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
   @State var windowManager: WindowManager<ID, Overlay>?
   @Namespace private var animationNamespace
   @Environment(\.colorScheme) private var colorScheme
+
+  init(
+   selection: Binding<ID?>,
+   config: HelpInfoOverlayConfig<ID, Overlay>
+  ) {
+    self._selection = selection
+    self.config = config
+    self.windowManager = config.windowManager
+  }
 
   func body(content: Content) -> some View {
     if config.viewConfig.scrollToItem {
