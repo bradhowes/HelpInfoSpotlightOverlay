@@ -38,13 +38,15 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     config: HelpInfoOverlayConfig<ID, Overlay>,
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
-    animationNamespace: Namespace.ID
+    animationNamespace: Namespace.ID,
+    colorScheme: ColorScheme
   ) -> some View {
     guard
       hostWindow == nil,
       let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
     else {
       self.windowedOverlayState.anchors = anchors
+      self.windowedOverlayState.colorScheme = colorScheme
       return EmptyView()
     }
 
@@ -52,6 +54,9 @@ final class WindowManager<ID: Hashable, Overlay: View> {
     window.backgroundColor = .clear
     window.windowLevel = .alert
     hostWindow = window
+
+    windowedOverlayState.anchors = anchors
+    windowedOverlayState.colorScheme = colorScheme
 
     let overlayView = WindowedOverlay<ID, Overlay>(
       selection: selection,
@@ -97,11 +102,12 @@ final class WindowManager<ID: Hashable, Overlay: View> {
 }
 
 /**
- When the WindowedOverlay is up, allow for changes to the collection of anchors to affect the overlay view.
+ When the WindowedOverlay is up, allow for changes to the collection of `anchors` or `colorScheme` to affect the overlay view.
  */
 @Observable
 private class WindowedOverlayState<ID: Hashable> {
   var anchors: [ID: Anchor<CGRect>] = [:]
+  var colorScheme: ColorScheme = .light
 }
 
 /**
@@ -116,7 +122,6 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   private let dismissAction: () -> Void
   private let scrollViewProxy: ScrollViewProxy?
   private let animationNamespace: Namespace.ID
-
   @State var isVisible = false
 
   init(
@@ -151,6 +156,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
           anchor: anchor,
           dismissAction: dismissAction,
         )
+        .environment(\.colorScheme, windowedOverlayState.colorScheme)
       }
       // Animate the appearance of the spotlight overlay. The animation for the disappearance is handled in the `dismissAction`.
       .opacity(isVisible ? 1 : 0)
@@ -168,18 +174,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 #if DEBUG
 
 #Preview {
-
-#if os(macOS)
-
-  TutorialSpotlightDemo()
-    .frame(width: 800, height: 600)
-
-#else
-
-  TutorialSpotlightDemo()
-
-#endif
-
+  tutorialSpotlightDemo()
 }
 
 #endif // DEBUG

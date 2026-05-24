@@ -192,7 +192,8 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
           config: config,
           anchors: anchors,
           scrollViewProxy: scrollViewProxy,
-          animationNamespace: animationNamespace
+          animationNamespace: animationNamespace,
+          colorScheme: colorScheme
         )
       } else {
         // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
@@ -249,6 +250,28 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
       previous: { self.previousAction(selected: selected, anchors: anchors, scrollViewProxy: scrollViewProxy) },
       next: { self.nextAction(selected: selected, anchors: anchors, scrollViewProxy: scrollViewProxy) }
     )
+  }
+
+  init(
+    selection: Binding<ID?>,
+    animationNamespace: Namespace.ID,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
+    anchors: [ID: Anchor<CGRect>],
+    geometryProxy: GeometryProxy,
+    scrollViewProxy: ScrollViewProxy?,
+    selected: ID,
+    anchor: Anchor<CGRect>,
+    dismissAction: @escaping () -> Void
+  ) {
+    self._selection = selection
+    self.animationNamespace = animationNamespace
+    self.config = config
+    self.anchors = anchors
+    self.geometryProxy = geometryProxy
+    self.scrollViewProxy = scrollViewProxy
+    self.selected = selected
+    self.anchor = anchor
+    self.dismissAction = dismissAction
   }
 
   var body: some View {
