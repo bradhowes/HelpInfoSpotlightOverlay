@@ -1,4 +1,4 @@
-![][spiv]][spi]
+[![][spiv]][spi]
 [![][spip]][spi]
 [![][mit]][license]
 
