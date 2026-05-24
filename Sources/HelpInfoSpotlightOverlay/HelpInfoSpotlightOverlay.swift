@@ -1,6 +1,7 @@
 // Copyright © 2026 Brad Howes. All rights reserved.
 //
-// Based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight
+// Originally based on code by Artem Mirzabekian -- https://github.com/Livsy90/TutorialSpotlight -- but the architecture and
+// feature set is vastly different now.
 
 import SwiftUI
 
@@ -226,23 +227,23 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
 struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
   typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
 
-  @Binding var selection: ID?
-  @State var pending: ID?
-  @State var position: CGPoint = .zero
-  let animationNamespace: Namespace.ID
+  @Binding private var selection: ID?
+  @State private var pending: ID?
+  @State private var position: CGPoint = .zero
 
-  let config: HelpInfoOverlayConfig<ID, Overlay>
-  let anchors: AnchorMap
-  let geometryProxy: GeometryProxy
-  let scrollViewProxy: ScrollViewProxy?
-  let selected: ID
-  let anchor: Anchor<CGRect>
-  let dismissAction: () -> Void
+  private let animationNamespace: Namespace.ID
+  private let config: HelpInfoOverlayConfig<ID, Overlay>
+  private let anchors: AnchorMap
+  private let geometryProxy: GeometryProxy
+  private let scrollViewProxy: ScrollViewProxy?
+  private let selected: ID
+  private let anchor: Anchor<CGRect>
+  private let dismissAction: () -> Void
 
   @Environment(\.colorScheme) private var colorScheme
 
-  var containerBounds: CGRect { geometryProxy.containerBounds }
-  var spotlightFrame: CGRect { config.frame(id: selected, anchor: anchor, proxy: geometryProxy) }
+  private var containerBounds: CGRect { geometryProxy.containerBounds }
+  private var spotlightFrame: CGRect { config.frame(id: selected, anchor: anchor, proxy: geometryProxy) }
 
   var actions: HelpInfoSpotlightOverlayActions {
     .init(
@@ -305,17 +306,22 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     }
   }
 
-  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
-    if let value = config.previousId(selected: selected, anchors: anchors) {
+  private func setPending(_ value: ID) {
+    if self.pending != value {
       scrollViewProxy?.scrollTo(value)
       self.pending = value
     }
   }
 
+  private func previousAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
+    if let value = config.previousId(selected: selected, anchors: anchors) {
+      setPending(value)
+    }
+  }
+
   private func nextAction(selected: ID, anchors: AnchorMap, scrollViewProxy: ScrollViewProxy?) {
     if let value = config.nextId(selected: selected, anchors: anchors) {
-      scrollViewProxy?.scrollTo(value)
-      self.pending = value
+      setPending(value)
     }
   }
 
