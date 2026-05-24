@@ -30,7 +30,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
         .font(.title3.weight(.bold))
         .contentTransition(.opacity)
       Text(item.text)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
         .contentTransition(.opacity)
     }
     .overlay(alignment: .topTrailing) {
@@ -63,7 +63,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
   .padding(20)
   .background {
     RoundedRectangle(cornerRadius: 28)
-      .fill(.background)
+      .fill(colorScheme == .light ? .white.mix(with: .black, by: 0.2) : .black.mix(with: .white, by: 0.2))
   }
 }
 
