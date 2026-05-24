@@ -14,8 +14,9 @@ Swift package that provides an elegant way to spotlight a SwiftUI view and displ
 * Can "scroll to" a view item to make it visible before showing the help info.
 * Allows for customized positioning of the help info overlay and sizing of the spotlight frame.
 * Properly renders over sheets.
+* Works on macOS (with minor issues).
 
-## Usage
+## Usage Example
 
 Define an `enum` to serve as a source of unique ids to tag important views in your UI:
 
