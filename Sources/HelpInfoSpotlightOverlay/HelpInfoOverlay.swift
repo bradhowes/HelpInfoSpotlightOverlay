@@ -65,6 +65,10 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
     RoundedRectangle(cornerRadius: 28)
       .fill(colorScheme == .light ? .white.mix(with: .black, by: 0.2) : .black.mix(with: .white, by: 0.2))
   }
+  .overlay(
+    RoundedRectangle(cornerRadius: 28)
+      .strokeBorder(.tint, lineWidth: 2)
+  )
 }
 
 #if DEBUG
