@@ -142,8 +142,7 @@ List of previous trips that have been taken.
     .helpInfoSpotlightOverlay(
       selection: $selection,
       orderedIDs: Step.allCases,
-      windowedMode: .none,
-      overlay: helpInfoOverlay
+      generator: helpInfoOverlay
     )
   }
 
@@ -386,7 +385,7 @@ extension View {
   }
 }
 
-#Preview {
+public func tutorialSpotlightDemo() -> some View {
 
 #if os(macOS)
 
@@ -396,10 +395,12 @@ extension View {
 #else
 
   TutorialSpotlightDemo()
-    .environment(\.colorScheme, .dark)
 
 #endif
+}
 
+#Preview {
+  tutorialSpotlightDemo()
 }
 
 #endif // DEBUG

@@ -98,21 +98,7 @@ extension View {
     windowedMode: HelpInfoSpotlightWindowedMode = .useCustomWindow,
     overlay: @escaping (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions) -> Overlay
   ) -> some View {
-    let config = HelpInfoOverlayConfig(
-      orderedIDs: orderedIDs,
-      viewConfig: .init(
-        spotlightPadding: spotlightPadding,
-        cornerRadius: cornerRadius,
-        blurRadius: blurRadius,
-        animationDuration: animationDuration,
-        lightModeDimmingOpacity: dimmingOpacity,
-        darkModeDimmingOpacity: dimmingOpacity,
-        scrollToItem: scrollToItem,
-        windowedMode: windowedMode
-      ),
-      generator: overlay
-    )
-    return modifier(
+    modifier(
       SpotlightOverlayModifier(
         selection: selection, config: .init(
           orderedIDs: orderedIDs,
@@ -204,36 +190,38 @@ private struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifi
     anchors: AnchorMap,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
-    if let windowManager {
+    if let selected = selection, let anchor = anchors[selected] {
+      if let windowManager {
 
-      // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
-      // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling. As such,
-      // this method can be called multiple times while the overlay is up.
-      windowManager.embedOverlay(
-        selection: $selection,
-        animationNamespace: animationNamespace,
-        config: config,
-        anchors: anchors,
-        scrollViewProxy: scrollViewProxy,
-        colorScheme: colorScheme
-      )
-    } else if let selected = selection, let anchor = anchors[selected] {
-      // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
-      // compared to windowed mode. Need a `GeometryProxy` to decode the anchor geometries.
-      GeometryReader { geometryProxy in
-        SpotlightOverlay(
+        // When using a top-level window to host the spotlight overlay, this creates and show the window and its overlay view.
+        // The window is only created once, but it can receive updates to the anchors if/when they change due to scrolling.
+        // As such, this method can be called multiple times while the overlay is up.
+        windowManager.embedOverlay(
           selection: $selection,
           animationNamespace: animationNamespace,
           config: config,
           anchors: anchors,
-          geometryProxy: geometryProxy,
           scrollViewProxy: scrollViewProxy,
-          selected: selected,
-          anchor: anchor,
-          dismissAction: {
-            self.selection = nil
-          }
+          colorScheme: colorScheme
         )
+      } else {
+        // Embed the spotlight overlay the the current view hierarchy. Note that this may not lead to great rendering results when
+        // compared to windowed mode. Need a `GeometryProxy` to decode the anchor geometries.
+        GeometryReader { geometryProxy in
+          SpotlightOverlay(
+            selection: $selection,
+            animationNamespace: animationNamespace,
+            config: config,
+            anchors: anchors,
+            geometryProxy: geometryProxy,
+            scrollViewProxy: scrollViewProxy,
+            selected: selected,
+            anchor: anchor,
+            dismissAction: {
+              self.selection = nil
+            }
+          )
+        }
       }
     } else {
       EmptyView()

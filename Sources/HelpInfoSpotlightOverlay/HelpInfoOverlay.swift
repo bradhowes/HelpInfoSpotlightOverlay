@@ -59,7 +59,13 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(for item: ID, actio
   .padding(20)
   .background {
     RoundedRectangle(cornerRadius: 28)
-      .fill(.background)
+      .fill(BackgroundShapeStyle())
+  }
+}
+
+private struct BackgroundShapeStyle: ShapeStyle {
+  func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
+    environment.colorScheme == .light ? .white : .black.mix(with: .white, by: 0.25)
   }
 }
 

@@ -157,6 +157,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
           anchor: anchor,
           dismissAction: dismissAction,
         )
+        .environment(\.colorScheme, windowedOverlayState.colorScheme)
       }
       // Animate the appearance of the spotlight overlay. The animation for the disappearance is handled in the `dismissAction`.
       .opacity(isVisible ? 1 : 0)
@@ -165,7 +166,6 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
       .onAppear {
         isVisible = true
       }
-      .preferredColorScheme(windowedOverlayState.colorScheme)
     } else {
       EmptyView()
     }
@@ -197,13 +197,17 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
 final class WindowManager<ID: Hashable, Overlay: View> {
   init() {}
 
-  func show(
+  func embedOverlay(
     selection: Binding<ID?>,
-    config: Config<ID, Overlay>,
+    animationNamespace: Namespace.ID,
+    config: HelpInfoOverlayConfig<ID, Overlay>,
     anchors: [ID: Anchor<CGRect>],
     scrollViewProxy: ScrollViewProxy?,
-    animationNamespace: Namespace.ID
-  ) {}
+    colorScheme: ColorScheme
+  ) -> some View
+  {
+    EmptyView()
+  }
 }
 
 #endif // os(iOS)
