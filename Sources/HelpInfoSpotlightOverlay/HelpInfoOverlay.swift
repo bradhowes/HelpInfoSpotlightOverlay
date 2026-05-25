@@ -67,7 +67,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
   }
   .overlay(
     RoundedRectangle(cornerRadius: 28)
-      .strokeBorder(.tint, lineWidth: 2)
+      .strokeBorder(.quinary, lineWidth: 2)
   )
 }
 
