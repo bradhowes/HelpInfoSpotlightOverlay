@@ -81,6 +81,8 @@ struct SpotlightOverlay<ID: Hashable, Overlay: View>: View {
     .animation(.smooth(duration: config.viewConfig.animationDuration), value: position)
     .onChange(of: pending) {
       // Postpone the update just a tad so that the anchor location will be valid after scrolling.
+      // This is a hack until we can figure out how to animate the scrollTo and have valid anchor geometries.
+      // (see https://github.com/bradhowes/HelpInfoSpotlightOverlay/issues/2)
       Task {
         self.selection = pending
       }
