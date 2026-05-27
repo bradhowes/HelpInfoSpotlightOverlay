@@ -6,14 +6,14 @@ import SwiftUI
  Container of configuration items and methods to walk collection of help item IDs.
  */
 public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
-  typealias AnchorMap = SpotlightOverlayPreferenceKey<ID>.Value
+  typealias AnchorMap = IDAnchorPreferenceKey<ID>.Value
 
   public typealias Placer = (_ panelSize: CGSize, _ spotlightFrame: CGRect, _ containerBounds: CGRect, _ config: Self) -> CGPoint
   public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ config: Self) -> CGRect
   public typealias Generator = (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions, _ colorScheme: ColorScheme) -> Overlay
 
   public var orderedIDs: [ID]
-  public var viewConfig: HelpInfoOverlayViewConfig
+  public var viewConfig: HelpInfoSpotlightOverlayViewConfig
   public var generator: Generator
   public var placer: Placer?
   public var framer: Framer?
@@ -39,7 +39,7 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
    */
   public init(
     orderedIDs: [ID] = [],
-    viewConfig: HelpInfoOverlayViewConfig? = nil,
+    viewConfig: HelpInfoSpotlightOverlayViewConfig? = nil,
     generator: @escaping Generator,
     placer: Placer? = nil,
     framer: Framer? = nil

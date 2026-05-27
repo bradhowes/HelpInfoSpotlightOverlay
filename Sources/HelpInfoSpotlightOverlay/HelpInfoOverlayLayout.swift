@@ -8,7 +8,7 @@ import SwiftUI
  The layout is not very robust, so best to limit what it manages to one or more `Text` views. It does guarantee the smallest
  bounding rectangle for the `Text` views it manages, and honors a `frame` `maxWidth` value if set.
  */
-public struct HelpInfoLayout: Layout {
+public struct HelpInfoOverlayLayout: Layout {
   public let spacing: CGFloat
 
   public init(spacing: CGFloat = 16.0) {
@@ -44,7 +44,7 @@ public struct HelpInfoLayout: Layout {
 
 #Preview {
   VStack(spacing: 32) {
-    HelpInfoLayout {
+    HelpInfoOverlayLayout {
       Text("Title Width")
         .font(.title3.weight(.bold))
       Text(
@@ -58,7 +58,7 @@ The quick fox.
     .border(.black, width: 1)
     .background(.yellow)
 
-    HelpInfoLayout {
+    HelpInfoOverlayLayout {
       Text("Body Width")
         .font(.title3.weight(.bold))
       Text(
@@ -72,7 +72,7 @@ The quick brown fox sat.
     .border(.black, width: 1)
     .background(.yellow)
 
-    HelpInfoLayout {
+    HelpInfoOverlayLayout {
       Text("Wrapped by Parent Width")
         .font(.title3.weight(.bold))
       Text(
@@ -87,7 +87,7 @@ The quick brown fox jumped over the lazy fox.
     .border(.black, width: 1)
     .background(.yellow)
 
-    HelpInfoLayout {
+    HelpInfoOverlayLayout {
       Text("Wrapped by maxWidth")
         .font(.title3.weight(.bold))
       Text(

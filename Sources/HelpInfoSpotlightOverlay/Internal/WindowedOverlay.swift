@@ -105,7 +105,7 @@ final class WindowManager<ID: Hashable, Overlay: View> {
  When the WindowedOverlay is up, allow for changes to the collection of `anchors` or `colorScheme` to affect the overlay view.
  */
 @Observable
-private class WindowedOverlayState<ID: Hashable> {
+private final class WindowedOverlayState<ID: Hashable> {
   var anchors: [ID: Anchor<CGRect>] = [:]
   var colorScheme: ColorScheme = .light
 }
@@ -114,7 +114,7 @@ private class WindowedOverlayState<ID: Hashable> {
  The main view of the custom UIWindow that shows the spotlight overlay.
  */
 private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
-  typealias Value = SpotlightOverlayPreferenceKey<ID>.Value
+  typealias Value = IDAnchorPreferenceKey<ID>.Value
 
   @Binding private var selection: ID?
   private let config: HelpInfoOverlayConfig<ID, Overlay>
@@ -122,7 +122,7 @@ private struct WindowedOverlay<ID: Hashable, Overlay: View>: View {
   private let dismissAction: () -> Void
   private let scrollViewProxy: ScrollViewProxy?
   private let animationNamespace: Namespace.ID
-  @State var isVisible = false
+  @State private var isVisible = false
 
   init(
     selection: Binding<ID?>,

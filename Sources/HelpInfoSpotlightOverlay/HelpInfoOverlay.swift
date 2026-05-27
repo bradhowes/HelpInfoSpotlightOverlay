@@ -25,7 +25,7 @@ public func helpInfoOverlay<ID: Hashable & HelpInfoProvider>(
   colorScheme: ColorScheme
 ) -> some View {
   VStack(spacing: 16) {
-    HelpInfoLayout {
+    HelpInfoOverlayLayout {
       Text(item.title)
         .font(.title3.weight(.bold))
         .contentTransition(.opacity)

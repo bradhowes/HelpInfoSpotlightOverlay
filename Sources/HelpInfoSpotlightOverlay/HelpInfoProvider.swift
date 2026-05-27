@@ -11,4 +11,3 @@ public protocol HelpInfoProvider {
   /// The content to use for the body `Text` view that provides details about the item.
   var text: LocalizedStringKey { get }
 }
-

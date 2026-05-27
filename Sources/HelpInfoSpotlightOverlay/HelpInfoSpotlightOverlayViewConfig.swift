@@ -5,7 +5,7 @@ import SwiftUI
 /**
  Collection of attributes that affects the behavior and appearance of the help info overlays.
  */
-public struct HelpInfoOverlayViewConfig {
+public struct HelpInfoSpotlightOverlayViewConfig {
   /// The amount of padding added to the spotlight centered on the current item.
   public var spotlightPadding: CGFloat
   /// The corner radius applied to spotlight framing rectangle.
