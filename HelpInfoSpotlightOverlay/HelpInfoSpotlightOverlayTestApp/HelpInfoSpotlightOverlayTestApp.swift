@@ -3,7 +3,7 @@
 import SwiftUI
 
 @main
-struct HelpInfoSpotlightOverlayTestAppApp: App {
+struct HelpInfoSpotlightOverlayTestApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
