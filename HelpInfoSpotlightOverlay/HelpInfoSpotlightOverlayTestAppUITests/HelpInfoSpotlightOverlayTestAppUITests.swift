@@ -1,28 +1,29 @@
 // Copyright © 2026 Brad Howes. All rights reserved.
 
-import XCTest
 import SnapshotTesting
+import SwiftUI
+import XCTest
+import XCTestParametrizedMacro
 
 final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
   let snapshot: Snapshotting<UIImage, UIImage> = .image(precision: 0.9, perceptualPrecision: 0.9)
-  var app: XCUIApplication!
 
   override func setUpWithError() throws {
     continueAfterFailure = false
-    XCUIDevice.shared.appearance = .dark
     XCUIDevice.shared.orientation = .portrait
+  }
 
+  func app(appearance: XCUIDevice.Appearance) -> XCUIApplication {
+    XCUIDevice.shared.appearance = appearance
     let app = XCUIApplication()
     app.launch()
     app.activate()
     app/*@START_MENU_TOKEN@*/.buttons["questionmark.circle"]/*[[".otherElements[\"questionmark.circle\"].buttons",".otherElements.buttons[\"questionmark.circle\"]",".buttons[\"questionmark.circle\"]"],[[[-1,2],[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/.firstMatch.tap()
-
     // Make sure that the view is up and available
     XCTAssertTrue(app.buttons["xmark"].isHittable)
     // Wait for animations to be done -- TODO: use custom config to disable animations and get rid of `delay` calls.
     delay(for: 1.0)
-
-    self.app = app
+    return app
   }
 
   func delay(for timeInterval: TimeInterval) {
@@ -31,16 +32,19 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     wait(for: [delayExpectation], timeout: timeInterval)
   }
 
+  @Parametrize(input: [XCUIDevice.Appearance.light, .dark], labels: ["light", "dark"])
   @MainActor
-  func testShowHelpInfo() throws {
-    let image = app.windows.firstMatch.screenshot().image
+  func testShowHelpInfo(input appearance: XCUIDevice.Appearance) throws {
+    let image = app(appearance: appearance).windows.firstMatch.screenshot().image
     withSnapshotTesting(record: .failed) {
       assertSnapshot(of: image.sansStatusBar, as: snapshot)
     }
   }
 
+  @Parametrize(input: [XCUIDevice.Appearance.light, .dark], labels: ["light", "dark"])
   @MainActor
-  func testCloseHelpInfo() throws {
+  func testCloseHelpInfo(input appearance: XCUIDevice.Appearance) throws {
+    let app = app(appearance: appearance)
     app.buttons["xmark"].firstMatch.tap()
     XCTAssertFalse(app/*@START_MENU_TOKEN@*/.buttons["xmark"]/*[[".otherElements",".buttons[\"exit\"]",".buttons[\"xmark\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.isHittable)
 
@@ -51,8 +55,10 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     }
   }
 
+  @Parametrize(input: [XCUIDevice.Appearance.light, .dark], labels: ["light", "dark"])
   @MainActor
-  func testTapClosesHelpInfo() throws {
+  func testTapClosesHelpInfo(input appearance: XCUIDevice.Appearance) throws {
+    let app = app(appearance: appearance)
     app.windows.firstMatch.tap(withNumberOfTaps: 1, numberOfTouches: 1)
     XCTAssertFalse(app/*@START_MENU_TOKEN@*/.buttons["xmark"]/*[[".otherElements",".buttons[\"exit\"]",".buttons[\"xmark\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.isHittable)
 
@@ -63,8 +69,10 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     }
   }
 
+  @Parametrize(input: [XCUIDevice.Appearance.light, .dark], labels: ["light", "dark"])
   @MainActor
-  func testGotoNextHelpInfo() throws {
+  func testGotoNextHelpInfo(input appearance: XCUIDevice.Appearance) throws {
+    let app = app(appearance: appearance)
     app/*@START_MENU_TOKEN@*/.buttons["arrowshape.right.fill"]/*[[".otherElements",".buttons[\"next\"]",".buttons[\"arrowshape.right.fill\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.firstMatch.tap()
 
     delay(for: 1.0)
@@ -74,8 +82,10 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     }
   }
 
+  @Parametrize(input: [XCUIDevice.Appearance.light, .dark], labels: ["light", "dark"])
   @MainActor
-  func testGotoPreviousHelpInfo() throws {
+  func testGotoPreviousHelpInfo(input appearance: XCUIDevice.Appearance) throws {
+    let app = app(appearance: appearance)
     app.buttons["arrowshape.left.fill"].firstMatch.tap()
 
     delay(for: 1.0)

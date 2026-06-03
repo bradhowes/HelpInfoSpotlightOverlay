@@ -1,5 +1,5 @@
 {
-  "originHash" : "b17711c8da8be836a34f12cfeaaf6581d8bd2aabea76f82a4752f819a6b604e1",
+  "originHash" : "12d9597ad2dad4afe980fec1c13404b6e8972c08f6f70caa46f680890e52cd0a",
   "pins" : [
     {
       "identity" : "swift-custom-dump",
@@ -22,10 +22,10 @@
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax",
+      "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
-        "version" : "603.0.1"
+        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
+        "version" : "509.1.1"
       }
     },
     {
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "dfd70507def84cb5fb821278448a262c6ff2bbad",
         "version" : "1.9.0"
+      }
+    },
+    {
+      "identity" : "xctestparametrizedmacro",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pgssoft/XCTestParametrizedMacro",
+      "state" : {
+        "revision" : "5ac90d9265dc412789d277c006f4138457dd2d14",
+        "version" : "0.1.1"
       }
     }
   ],

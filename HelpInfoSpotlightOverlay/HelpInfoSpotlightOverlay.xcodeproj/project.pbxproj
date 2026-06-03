@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BD358C8D2FB5D687003F1166 /* HelpInfoSpotlightOverlay in Frameworks */ = {isa = PBXBuildFile; productRef = BD358C8C2FB5D687003F1166 /* HelpInfoSpotlightOverlay */; };
+		BDA4DCE42FD039B4007482B8 /* XCTestParametrizedMacro in Frameworks */ = {isa = PBXBuildFile; productRef = BDA4DCE32FD039B4007482B8 /* XCTestParametrizedMacro */; };
 		BDB329AE2FCF2AAA0009AF13 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = BDB329AD2FCF2AAA0009AF13 /* SnapshotTesting */; };
 /* End PBXBuildFile section */
 
@@ -65,6 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDA4DCE42FD039B4007482B8 /* XCTestParametrizedMacro in Frameworks */,
 				BDB329AE2FCF2AAA0009AF13 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -144,6 +146,7 @@
 			name = HelpInfoSpotlightOverlayTestAppUITests;
 			packageProductDependencies = (
 				BDB329AD2FCF2AAA0009AF13 /* SnapshotTesting */,
+				BDA4DCE32FD039B4007482B8 /* XCTestParametrizedMacro */,
 			);
 			productName = HelpInfoSpotlightOverlayTestAppUITests;
 			productReference = BDB329A12FCF0D650009AF13 /* HelpInfoSpotlightOverlayTestAppUITests.xctest */;
@@ -180,6 +183,7 @@
 			packageReferences = (
 				BD358C7E2FB5D561003F1166 /* XCLocalSwiftPackageReference "../../HelpInfoSpotlightOverlay" */,
 				BDB329AC2FCF11290009AF13 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				BDA4DCE22FD0399B007482B8 /* XCRemoteSwiftPackageReference "XCTestParametrizedMacro" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BD37BB872FA0BB560099F646 /* Products */;
@@ -541,6 +545,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		BDA4DCE22FD0399B007482B8 /* XCRemoteSwiftPackageReference "XCTestParametrizedMacro" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pgssoft/XCTestParametrizedMacro";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.1;
+			};
+		};
 		BDB329AC2FCF11290009AF13 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
@@ -556,6 +568,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BD358C7E2FB5D561003F1166 /* XCLocalSwiftPackageReference "../../HelpInfoSpotlightOverlay" */;
 			productName = HelpInfoSpotlightOverlay;
+		};
+		BDA4DCE32FD039B4007482B8 /* XCTestParametrizedMacro */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BDA4DCE22FD0399B007482B8 /* XCRemoteSwiftPackageReference "XCTestParametrizedMacro" */;
+			productName = XCTestParametrizedMacro;
 		};
 		BDB329AD2FCF2AAA0009AF13 /* SnapshotTesting */ = {
 			isa = XCSwiftPackageProductDependency;
