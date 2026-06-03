@@ -16,13 +16,12 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
   func app(appearance: XCUIDevice.Appearance) -> XCUIApplication {
     XCUIDevice.shared.appearance = appearance
     let app = XCUIApplication()
+    app.launchArguments = ["UITEST", "NO_SCROLLTO"]
     app.launch()
     app.activate()
     app/*@START_MENU_TOKEN@*/.buttons["questionmark.circle"]/*[[".otherElements[\"questionmark.circle\"].buttons",".otherElements.buttons[\"questionmark.circle\"]",".buttons[\"questionmark.circle\"]"],[[[-1,2],[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/.firstMatch.tap()
     // Make sure that the view is up and available
     XCTAssertTrue(app.buttons["xmark"].isHittable)
-    // Wait for animations to be done -- TODO: use custom config to disable animations and get rid of `delay` calls.
-    delay(for: 1.0)
     return app
   }
 
@@ -48,7 +47,6 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     app.buttons["xmark"].firstMatch.tap()
     XCTAssertFalse(app/*@START_MENU_TOKEN@*/.buttons["xmark"]/*[[".otherElements",".buttons[\"exit\"]",".buttons[\"xmark\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.isHittable)
 
-    delay(for: 1.0)
     let image = app.windows.firstMatch.screenshot().image
     withSnapshotTesting(record: .failed) {
       assertSnapshot(of: image.sansStatusBar, as: snapshot)
@@ -62,7 +60,6 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     app.windows.firstMatch.tap(withNumberOfTaps: 1, numberOfTouches: 1)
     XCTAssertFalse(app/*@START_MENU_TOKEN@*/.buttons["xmark"]/*[[".otherElements",".buttons[\"exit\"]",".buttons[\"xmark\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.isHittable)
 
-    delay(for: 1.0)
     let image = app.windows.firstMatch.screenshot().image
     withSnapshotTesting(record: .failed) {
       assertSnapshot(of: image.sansStatusBar, as: snapshot)
@@ -75,7 +72,6 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     let app = app(appearance: appearance)
     app/*@START_MENU_TOKEN@*/.buttons["arrowshape.right.fill"]/*[[".otherElements",".buttons[\"next\"]",".buttons[\"arrowshape.right.fill\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/.firstMatch.tap()
 
-    delay(for: 1.0)
     let image = app.windows.firstMatch.screenshot().image
     withSnapshotTesting(record: .failed) {
       assertSnapshot(of: image.sansStatusBar, as: snapshot)
@@ -88,7 +84,6 @@ final class HelpInfoSpotlightOverlayTestAppUITests: XCTestCase {
     let app = app(appearance: appearance)
     app.buttons["arrowshape.left.fill"].firstMatch.tap()
 
-    delay(for: 1.0)
     let image = app.windows.firstMatch.screenshot().image
     withSnapshotTesting(record: .failed) {
       assertSnapshot(of: image.sansStatusBar, as: snapshot)

@@ -81,7 +81,13 @@ List of previous trips that have been taken.
   @State private var selection: Step?
   @State private var showSheet: Bool = false
 
-  public init() {}
+  let enableAnimations: Bool
+  let enableScrollTo: Bool
+
+  public init(enableAnimations: Bool = true, enableScrollTo: Bool = true) {
+    self.enableAnimations = enableAnimations
+    self.enableScrollTo = enableScrollTo
+  }
 
   public var body: some View {
 
@@ -142,6 +148,10 @@ List of previous trips that have been taken.
     .helpInfoSpotlightOverlay(
       selection: $selection,
       orderedIDs: Step.allCases,
+      viewConfig: .init(
+        animationDuration: enableAnimations ? 0.65 : 0.0,
+        scrollToItem: enableScrollTo
+      ),
       generator: helpInfoOverlay
     )
   }
@@ -385,7 +395,7 @@ extension View {
   }
 }
 
-public func tutorialSpotlightDemo() -> some View {
+public func tutorialSpotlightDemo(enableAnimations: Bool = true, enableScrollTo: Bool = true) -> some View {
 
 #if os(macOS)
 
@@ -394,13 +404,14 @@ public func tutorialSpotlightDemo() -> some View {
 
 #else
 
-  TutorialSpotlightDemo()
+  TutorialSpotlightDemo(enableAnimations: enableAnimations, enableScrollTo: enableScrollTo)
 
 #endif
+
 }
 
 #Preview {
-  tutorialSpotlightDemo()
+  tutorialSpotlightDemo(enableAnimations: true, enableScrollTo: true)
 }
 
 #endif // DEBUG

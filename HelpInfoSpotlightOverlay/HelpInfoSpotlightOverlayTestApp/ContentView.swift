@@ -4,11 +4,14 @@ import HelpInfoSpotlightOverlay
 import SwiftUI
 
 struct ContentView: View {
+  let enableAnimations: Bool
+  let enableScrollTo: Bool
+
   var body: some View {
-    tutorialSpotlightDemo()
+    tutorialSpotlightDemo(enableAnimations: enableAnimations, enableScrollTo: enableScrollTo)
   }
 }
 
 #Preview {
-  ContentView()
+  ContentView(enableAnimations: true, enableScrollTo: true)
 }
