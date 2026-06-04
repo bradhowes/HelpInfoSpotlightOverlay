@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BD37BBA12FA0BB9D0099F646"
-               BuildableName = "HelpInfoSpotlightOverlayTestApp.app"
-               BlueprintName = "HelpInfoSpotlightOverlayTestApp"
-               ReferencedContainer = "container:HelpInfoSpotlightOverlay.xcodeproj">
+               BlueprintIdentifier = "HelpInfoSpotlightOverlay"
+               BuildableName = "HelpInfoSpotlightOverlay"
+               BlueprintName = "HelpInfoSpotlightOverlay"
+               ReferencedContainer = "container:..">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -34,19 +34,6 @@
             default = "YES">
          </TestPlanReference>
       </TestPlans>
-      <Testables>
-         <TestableReference
-            skipped = "YES"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BDB329A02FCF0D650009AF13"
-               BuildableName = "HelpInfoSpotlightOverlayTestAppUITests.xctest"
-               BlueprintName = "HelpInfoSpotlightOverlayTestAppUITests"
-               ReferencedContainer = "container:HelpInfoSpotlightOverlay.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -59,16 +46,6 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       queueDebuggingEnableBacktraceRecording = "Yes">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BD37BBA12FA0BB9D0099F646"
-            BuildableName = "HelpInfoSpotlightOverlayTestApp.app"
-            BlueprintName = "HelpInfoSpotlightOverlayTestApp"
-            ReferencedContainer = "container:HelpInfoSpotlightOverlay.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -76,16 +53,15 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BD37BBA12FA0BB9D0099F646"
-            BuildableName = "HelpInfoSpotlightOverlayTestApp.app"
-            BlueprintName = "HelpInfoSpotlightOverlayTestApp"
-            ReferencedContainer = "container:HelpInfoSpotlightOverlay.xcodeproj">
+            BlueprintIdentifier = "HelpInfoSpotlightOverlay"
+            BuildableName = "HelpInfoSpotlightOverlay"
+            BlueprintName = "HelpInfoSpotlightOverlay"
+            ReferencedContainer = "container:..">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

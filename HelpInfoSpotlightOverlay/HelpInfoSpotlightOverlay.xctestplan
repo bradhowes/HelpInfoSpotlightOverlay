@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "F12CA7BB-17F4-42AA-B310-5BB63657DC0C",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:HelpInfoSpotlightOverlay.xcodeproj",
+        "identifier" : "BDB329A02FCF0D650009AF13",
+        "name" : "HelpInfoSpotlightOverlayTestAppUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

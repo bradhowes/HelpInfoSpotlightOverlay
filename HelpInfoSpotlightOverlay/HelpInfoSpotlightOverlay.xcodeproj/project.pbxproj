@@ -36,6 +36,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BD12F18E2FD0C76D00DA660B /* HelpInfoSpotlightOverlay.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = HelpInfoSpotlightOverlay.xctestplan; sourceTree = "<group>"; };
+		BD12F18F2FD0C7B600DA660B /* HelpInfoSpotlightOverlayTestApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = HelpInfoSpotlightOverlayTestApp.xctestplan; sourceTree = "<group>"; };
 		BD37BBA22FA0BB9D0099F646 /* HelpInfoSpotlightOverlayTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelpInfoSpotlightOverlayTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDB329A12FCF0D650009AF13 /* HelpInfoSpotlightOverlayTestAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HelpInfoSpotlightOverlayTestAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -77,6 +79,8 @@
 		BD37BB7C2FA0BB560099F646 = {
 			isa = PBXGroup;
 			children = (
+				BD12F18F2FD0C7B600DA660B /* HelpInfoSpotlightOverlayTestApp.xctestplan */,
+				BD12F18E2FD0C76D00DA660B /* HelpInfoSpotlightOverlay.xctestplan */,
 				BD37BBA32FA0BB9D0099F646 /* HelpInfoSpotlightOverlayTestApp */,
 				BDB329A22FCF0D650009AF13 /* HelpInfoSpotlightOverlayTestAppUITests */,
 				BD37BBB22FA0BF3B0099F646 /* Frameworks */,

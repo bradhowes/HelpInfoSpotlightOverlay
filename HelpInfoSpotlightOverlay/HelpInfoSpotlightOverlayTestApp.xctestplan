@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "6FBCE4EC-6EE5-4110-BC70-F221DA5E9E47",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:HelpInfoSpotlightOverlay.xcodeproj",
+      "identifier" : "BD37BBA12FA0BB9D0099F646",
+      "name" : "HelpInfoSpotlightOverlayTestApp"
+    }
+  },
+  "testTargets" : [
+    {
+      "enabled" : false,
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:HelpInfoSpotlightOverlay.xcodeproj",
+        "identifier" : "BDB329A02FCF0D650009AF13",
+        "name" : "HelpInfoSpotlightOverlayTestAppUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
