@@ -12,11 +12,11 @@ public struct HelpInfoOverlayConfig<ID: Hashable, Overlay: View> {
   public typealias Framer = (_ id: ID, _ anchor: Anchor<CGRect>, _ proxy: GeometryProxy, _ config: Self) -> CGRect
   public typealias Generator = (_ id: ID, _ actions: HelpInfoSpotlightOverlayActions, _ colorScheme: ColorScheme) -> Overlay
 
-  public var orderedIDs: [ID]
-  public var viewConfig: HelpInfoSpotlightOverlayViewConfig
-  public var generator: Generator
-  public var placer: Placer?
-  public var framer: Framer?
+  public let orderedIDs: [ID]
+  public let viewConfig: HelpInfoSpotlightOverlayViewConfig
+  public let generator: Generator
+  public let placer: Placer?
+  public let framer: Framer?
 
   @MainActor
   var windowManager: WindowManager<ID, Overlay>? {

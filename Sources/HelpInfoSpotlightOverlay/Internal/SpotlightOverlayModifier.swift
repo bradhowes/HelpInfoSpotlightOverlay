@@ -66,6 +66,7 @@ struct SpotlightOverlayModifier<ID: Hashable, Overlay: View>: ViewModifier {
     anchors: AnchorMap,
     scrollViewProxy: ScrollViewProxy? = nil
   ) -> some View {
+    // Start of the spotlighting happens once selection is non-nil and there is a valid anchor for it.
     if let selected = selection, let anchor = anchors[selected] {
       if let windowManager {
 

@@ -11,7 +11,7 @@ extension View {
    Install a help info overlay onto the current view.
 
    - parameter selection: a binding to the state variable that controls which item is under the spotlight.
-   - parameter config: the configuration for the overlay view and operation.
+   - parameter config: the complete configuration for the overlay view and operation.
    - returns: the modified view
    */
   public func helpInfoSpotlightOverlay<ID: Hashable, Overlay: View>(
