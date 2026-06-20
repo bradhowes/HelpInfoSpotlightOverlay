@@ -395,6 +395,7 @@ extension View {
   }
 }
 
+@MainActor
 public func tutorialSpotlightDemo(enableAnimations: Bool = true, enableScrollTo: Bool = true) -> some View {
 
 #if os(macOS)
